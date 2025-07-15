@@ -14,8 +14,11 @@ def dispatch(message: dict, addr: str, peer_manager):
 	elif msg_type == "POST":
 		user_id = message.get("USER_ID")
 		content = message.get("CONTENT")
+		timestamp = message.get("TIMESTAMP")
+		ttl = message.get("TTL")
+		message_id = message.get("MESSAGE_ID")
 		if user_id and content:
-			peer_manager.add_post(user_id, content)
+			peer_manager.add_post(user_id, content, timestamp, ttl, message_id)
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")
