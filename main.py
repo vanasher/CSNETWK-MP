@@ -5,7 +5,13 @@ from core.peer import PeerManager
 from core.message_dispatcher import dispatch
 
 if __name__ == "__main__":
-    logger = Logger(verbose=True)
-    peer_manager = PeerManager(logger)
-    udp = UDPHandler(logger, peer_manager, dispatch)
-    udp.start()
+	logger = Logger(verbose=True)
+	peer_manager = PeerManager(logger)
+	udp = UDPHandler(logger, peer_manager, dispatch)
+	udp.start()
+
+	try:
+		while True:
+			pass
+	except KeyboardInterrupt:
+		print("\nShutting down...")
