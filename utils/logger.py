@@ -1,4 +1,5 @@
 import datetime
+from parser.message_parser import craft_message
 
 # logger class that supports verbose mode
 class Logger:
@@ -11,14 +12,20 @@ class Logger:
 			print(f"[{now}] [{tag}] {message}")
 			
 	def log_send(self, msg_type, ip, msg=None):
-		self.log("SEND >", f"To {ip} | TYPE: {msg_type}")
+		if msg_type != "PROFILE":
+			self.log("SEND >", f"To {ip} | TYPE: {msg_type}")
 		if msg:
 			self.log("SEND >", msg)
 
 	def log_recv(self, msg_type, ip, msg=None):
 		self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
 		if msg:
-			self.log("RECV <", msg)
+			# if msg is a dict (parsed message), convert to LSNP text
+			if isinstance(msg, dict):
+				lsnp_text = craft_message(msg)
+				self.log("RECV <", lsnp_text.strip())
+			else:
+				self.log("RECV <", msg)
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

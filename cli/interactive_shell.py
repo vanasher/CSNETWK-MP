@@ -20,11 +20,8 @@ def run_shell(logger, peer_manager):
 				display_name = input("Display name: ").strip()
 				status = input("Status: ").strip()
 
-				ip = get_local_ip()
-				user_id = f"{username}@{ip}"
-
-				peer_manager.set_own_profile(user_id, display_name, status)
-				logger.log("SHELL", f"Profile set for {user_id} and will be broadcast periodically.")
+				peer_manager.set_own_profile(username, display_name, status)
+				logger.log("SHELL", f"Profile set for {username} and will be broadcast periodically.")
 
 			elif cmd.startswith("verbose"):
 				parts = cmd.split()

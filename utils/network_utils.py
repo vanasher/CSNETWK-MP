@@ -1,12 +1,12 @@
 import socket
-import json
+from parser.message_parser import craft_message
 import ipaddress
 
 def send_message(msg_dict, addr, udp_socket=None):
     if udp_socket is None:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    msg_json = json.dumps(msg_dict).encode('utf-8')
-    udp_socket.sendto(msg_json, addr)
+    msg_text = craft_message(msg_dict)
+    udp_socket.sendto(msg_text.encode('utf-8'), addr)
 
 def get_local_ip():
     # This tries to connect to an external host, but doesn't actually send data,

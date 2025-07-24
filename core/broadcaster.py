@@ -3,6 +3,7 @@ import time
 import config
 from utils.network_utils import send_message
 import json
+from parser.message_parser import craft_message  # import craft_message
 
 def broadcast_profile_periodically(logger, peer_manager, interval=30):
     def broadcast_loop():
@@ -11,7 +12,9 @@ def broadcast_profile_periodically(logger, peer_manager, interval=30):
             # Only broadcast if the profile is complete (has USER_ID)
             if profile and profile.get("USER_ID"):
                 send_message(profile, (config.BROADCAST_ADDR, config.PORT))
-                logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", json.dumps(profile, indent=2))
+                
+                lsnp_text = craft_message(profile)
+                logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", lsnp_text)
             else:
                 logger.log("PROFILE", "Own profile not set; skipping broadcast.")
             time.sleep(interval)

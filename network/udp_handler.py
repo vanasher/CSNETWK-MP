@@ -15,7 +15,7 @@ class UDPHandler:
         # set up UDP socket with broadcast capability
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.bind(("", config.PORT)) # change the config.PORT to a different port if needed (while testing on the same device)
+        self.sock.bind(("", 5678)) # change the config.PORT to a different port if needed (while testing on the same device)
 		                                  # since multiple instances of the same program cannot bind to the same port
 	
 	# start background listener thread
@@ -31,7 +31,7 @@ class UDPHandler:
                 data, addr = self.sock.recvfrom(65535) # 65535 -> maximum size of a UDP datagram
                 raw = data.decode("utf-8")
                 message = parse_message(raw)
-                self.logger.log("RECV <", message)
+                self.logger.log_recv(message.get("TYPE", "UNKNOWN"), addr[0], message)
                 self.dispatch(message, addr[0], self.peer_manager)
             except Exception as e:
                 self.logger.log("ERROR", str(e))
