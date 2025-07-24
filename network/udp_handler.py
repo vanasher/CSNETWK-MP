@@ -15,8 +15,9 @@ class UDPHandler:
         # set up UDP socket with broadcast capability
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.bind(("", config.PORT))
-
+        self.sock.bind(("", config.PORT)) # change the config.PORT to a different port if needed (while testing on the same device)
+		                                  # since multiple instances of the same program cannot bind to the same port
+	
 	# start background listener thread
     def start(self):
         threading.Thread(target=self.listen, daemon=True).start()

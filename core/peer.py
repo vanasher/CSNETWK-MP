@@ -1,10 +1,35 @@
-# keeps track of all known peers and their data in a dictionary
+from utils.network_utils import get_local_ip
+
+#  keeps track of all known peers and their data in a dictionary
 class PeerManager:
 	def __init__(self, logger):
 		self.logger = logger
 		self.peers = {} # stores disctionary of peers by USER_ID
 						# user_id -> {display_name, status, posts: [], dms: []}
-						
+		self.own_profile = None
+	
+	# set the user's profile data
+	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
+		ip = get_local_ip()
+		user_id = f"{username}@{ip}"
+		self.own_profile = {
+			"TYPE": "PROFILE",
+			"USER_ID": user_id,
+			"DISPLAY_NAME": display_name,
+			"STATUS": status,
+			"AVATAR_TYPE": avatar_type,
+			"AVATAR_ENCODING": avatar_encoding,
+			"AVATAR_DATA": avatar_data
+		}
+		self.logger.log("PEER", f"Own profile updated with USER_ID {user_id}.")
+
+	# for broadcasting own profile periodically
+	def get_own_profile(self):
+		return self.own_profile
+	
+	def has_profile(self):
+		return self.own_profile.get("USER_ID") is not None
+	
 	# add or update a peer's profile info
 	def add_peer(self, user_id, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
 		if user_id not in self.peers:
