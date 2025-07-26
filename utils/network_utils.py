@@ -24,17 +24,32 @@ def get_local_ip():
         s.close()
     return ip
 
-# Get the broadcast address for the local network.
+# # Get the broadcast address for the local network.
+# def get_broadcast_address():
+#     for iface, addrs in psutil.net_if_addrs().items():
+#         for addr in addrs:
+#             if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+#                 ip = addr.address
+#                 netmask = addr.netmask
+#                 interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
+#                 return str(interface.network.broadcast_address)
+#     return "255.255.255.255"  # fallback
+
+
 def get_broadcast_address():
-    for iface, addrs in psutil.net_if_addrs().items():
+    for iface_name, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
-            if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+            if (
+                addr.family == socket.AF_INET and
+                not addr.address.startswith("127.") and
+                not addr.address.startswith("169.254.")  # Skip link-local
+            ):
                 ip = addr.address
                 netmask = addr.netmask
-                interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
-                return str(interface.network.broadcast_address)
-    return "255.255.255.255"  # fallback
-
+                if ip and netmask:
+                    interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
+                    return str(interface.network.broadcast_address)
+    return "255.255.255.255"
 
 # this function is commented out because it requires the netifaces library,
 '''
