@@ -27,9 +27,15 @@ def send_message(msg_dict, addr, udp_socket=None):
 def get_local_ip():
     for iface, addrs in psutil.net_if_addrs().items():
         for addr in addrs:
-            if addr.family == socket.AF_INET and not addr.address.startswith("127."):
-                return addr.address
-    return '127.0.0.1'
+            if (
+                addr.family == socket.AF_INET and
+                not addr.address.startswith("127.") and
+                addr.address != "0.0.0.0"
+            ):
+                # Optionally skip virtual interfaces
+                if "Virtual" not in iface and "VMware" not in iface:
+                    return addr.address
+    return '127.0.0.1'  # fallback if nothing found
 
 # # Get the broadcast address for the local network.
 # def get_broadcast_address():
