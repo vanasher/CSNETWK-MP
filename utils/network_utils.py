@@ -1,7 +1,8 @@
 import socket
 from parser.message_parser import craft_message
 import ipaddress
-import netifaces as ni
+import psutil
+# import netifaces as ni (this is commented out to avoid import errors in this environment since it requires additonal installation)
 
 def send_message(msg_dict, addr, udp_socket=None):
     if udp_socket is None:
@@ -23,6 +24,20 @@ def get_local_ip():
         s.close()
     return ip
 
+# Get the broadcast address for the local network.
+def get_broadcast_address():
+    for iface, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+                ip = addr.address
+                netmask = addr.netmask
+                interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
+                return str(interface.network.broadcast_address)
+    return "255.255.255.255"  # fallback
+
+
+# this function is commented out because it requires the netifaces library,
+'''
 def get_broadcast_address():
     interfaces = ni.interfaces()
     for iface in interfaces:
@@ -35,3 +50,4 @@ def get_broadcast_address():
                     interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
                     return str(interface.network.broadcast_address)
     return '255.255.255.255'
+'''
