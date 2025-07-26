@@ -9,7 +9,7 @@ class Logger:
 	def log(self, tag, message):
 		if self.verbose:
 			now = datetime.datetime.now().strftime("%H:%M:%S")
-			print(f"[{now}] [{tag}] {message}")
+			print(f"\n[{now}] \n[{tag}] \n{message}")
 			
 	def log_send(self, msg_type, ip, msg=None):
 		if msg_type != "PROFILE":
@@ -39,7 +39,7 @@ class Logger:
 
 	def log_retry(self, attempt, context=""):
 		self.log("RETRY", f"Attempt {attempt} {context}")
-		
+
 	def set_verbose(self, state: bool):
 		self.log("LOGGER", f"Verbose mode {'enabled' if state else 'disabled'}.")
 		self.verbose = state

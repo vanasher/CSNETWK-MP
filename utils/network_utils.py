@@ -1,6 +1,7 @@
 import socket
 from parser.message_parser import craft_message
 import ipaddress
+import netifaces as ni
 
 def send_message(msg_dict, addr, udp_socket=None):
     if udp_socket is None:
@@ -23,17 +24,14 @@ def get_local_ip():
     return ip
 
 def get_broadcast_address():
-    # Get local IP address
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(('8.8.8.8', 80))
-        local_ip = s.getsockname()[0]
-    except Exception:
-        local_ip = '127.0.0.1'
-    finally:
-        s.close()
-
-    # Assume common subnet mask (e.g., /24 = 255.255.255.0)
-    # You can adjust this logic to read actual subnet if you want
-    interface = ipaddress.IPv4Interface(f'{local_ip}/24')
-    return str(interface.network.broadcast_address)
+    interfaces = ni.interfaces()
+    for iface in interfaces:
+        ifaddresses = ni.ifaddresses(iface)
+        if ni.AF_INET in ifaddresses:
+            for link in ifaddresses[ni.AF_INET]:
+                ip = link.get('addr')
+                netmask = link.get('netmask')
+                if ip and netmask and not ip.startswith('127.'):
+                    interface = ipaddress.IPv4Interface(f"{ip}/{netmask}")
+                    return str(interface.network.broadcast_address)
+    return '255.255.255.255'

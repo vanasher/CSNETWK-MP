@@ -3,7 +3,7 @@ import time
 import config
 from utils.network_utils import send_message
 import json
-from parser.message_parser import craft_message  # import craft_message
+from parser.message_parser import craft_message
 
 def broadcast_profile_periodically(logger, peer_manager, interval=30):
     def broadcast_loop():
