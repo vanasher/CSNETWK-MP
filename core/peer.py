@@ -64,29 +64,6 @@ class PeerManager:
 			#token: token
 		})
 
-	# add a new dm to the peer's dm list
-	def add_dm(self, user_id, content, timestamp=None, ttl=None, message_id=None, token=None):
-		if user_id in self.peers:
-			self.peers[user_id]['posts'].append({
-				'content': content,
-				'timestamp': timestamp,
-				'ttl': ttl,
-				'message_id': message_id,
-				'token': token
-			})
-		else: # this else block handles previously unknown peers (have not yet recevied a PROFILE message from)
-			self.peers[user_id] = {
-				'display_name': user_id,
-				'status': '',
-				'posts': [],
-				'dms': [{
-					'content': content,
-					'timestamp': timestamp,
-					'message_id': message_id
-					#'token': token
-				}]
-			}
-
 	# add a new follower to a peer's followers list
 	def add_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
 		if to_user not in self.peers:
@@ -142,18 +119,32 @@ class PeerManager:
 
 	# return a list of (user_id, ip_address) of peers who follow the current user
 	def get_follower_ips(self):
-		own_id = self.own_profile.get("USER_ID")
 		followers = []
-
+		own_id = self.own_profile.get("USER_ID")
+		
 		for peer_id, peer_info in self.peers.items():
 			for follower in peer_info.get("followers", []):
 				if follower['user'] == own_id:
-					# Extract IP from peer_id
+					# this means peer_id is someone who follows me
 					ip = peer_id.split("@")[-1]
 					followers.append((peer_id, ip))
-					break  # No need to keep checking this peer’s followers
+					break
 
 		return followers
+	
+	def add_dm(self, from_user, content, timestamp, message_id, token):
+		if from_user not in self.peers:
+			self.peers[from_user] = {}
+
+		if "dms" not in self.peers[from_user]:
+			self.peers[from_user]["dms"] = []
+
+		self.peers[from_user]["dms"].append({
+			"content": content,
+			"timestamp": timestamp,
+			"message_id": message_id,
+			"token": token
+		})
 	
 	# returns a list of (user_id, display_name) for all known peers
 	def list_peers(self):

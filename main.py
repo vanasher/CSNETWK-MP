@@ -8,17 +8,14 @@ from cli.interactive_shell import run_shell
 from core.broadcaster import broadcast_profile_periodically
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(description="Run LSNP peer")
-	parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-	args = parser.parse_args()
-
-	logger = Logger(verbose=args.verbose)
+	
+	logger = Logger(verbose=True)
 	peer_manager = PeerManager(logger)
 	udp = UDPHandler(logger, peer_manager, dispatch)
 	udp.start()
 
 	broadcast_profile_periodically(logger, peer_manager)
-	# Start interactive shell
+	# start interactive shell
 	try:
 		run_shell(logger, peer_manager)
 	except KeyboardInterrupt:

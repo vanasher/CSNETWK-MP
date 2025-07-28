@@ -3,7 +3,7 @@ from parser.message_parser import craft_message
 
 # logger class that supports verbose mode
 class Logger:
-	def __init__(self, verbose=False):
+	def __init__(self, verbose):
 		self.verbose = verbose
 
 	def log(self, tag, message):

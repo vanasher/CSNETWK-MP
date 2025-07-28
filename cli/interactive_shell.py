@@ -60,11 +60,44 @@ def run_shell(logger, peer_manager):
 					"TOKEN": token
 				}
 
-				# Send only to followers
+				# send only to followers
 				follower_ips = peer_manager.get_follower_ips()
-				for ip in follower_ips:
+				for user_id, ip in follower_ips:
 					send_message(post_message, (ip, config.PORT))
 					logger.log_send("POST", ip, post_message)
+
+			# 'dm' command to send a direct message to a peer
+			elif cmd == "dm":
+				recipient = input("Recipient (user_id@ip): ").strip()
+				content = input("Message: ").strip()
+				if not recipient or not content:
+					print("Recipient and content cannot be empty.")
+					continue
+
+				import time, random
+				now = int(time.time())
+				ttl = 3600
+				sender = peer_manager.own_profile["USER_ID"]
+				message_id = f"{random.getrandbits(64):016x}"
+				token = f"{sender}|{now + ttl}|chat"
+
+				dm_message = {
+					"TYPE": "DM",
+					"FROM": sender,
+					"TO": recipient,
+					"CONTENT": content,
+					"TIMESTAMP": now,
+					"MESSAGE_ID": message_id,
+					"TOKEN": token
+				}
+
+				# Extract IP from recipient (format: user@ip)
+				try:
+					_, ip = recipient.split("@")
+					send_message(dm_message, (ip, config.PORT))
+					print("Direct message sent.")
+				except ValueError:
+					print("Invalid recipient format. Use user@ip.")
 
 			# switching verbose/non-verbose mode
 			elif cmd.startswith("verbose"):
@@ -75,7 +108,7 @@ def run_shell(logger, peer_manager):
 					print("Usage: verbose [on|off]")
 
 			elif cmd == "help":
-				print("Available commands:\n  profile\n  verbose [on|off]\n  exit")
+				print("Available commands:\n  profile\n  verbose [on|off]\n  post\n  dm\n  exit")
 
 			else:
 				print("Unknown command. Type 'help'.")

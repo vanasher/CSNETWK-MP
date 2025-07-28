@@ -22,7 +22,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		token = message.get("TOKEN")
 		if peer_manager.is_following(user_id):
 			peer_manager.add_post(user_id, content, ttl, message_id, token)
-			peer_manager.logger.log_recv("POST", addr[0], message)
+			# peer_manager.logger.log_recv("POST", addr[0], message)
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")
@@ -31,16 +31,20 @@ def dispatch(message: dict, addr: str, peer_manager):
 		content = message.get("CONTENT")
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
-		if from_user and to_user and content:
-			peer_manager.add_dm(from_user, content, timestamp, message_id, token)
 
-			# sends ACK message back to sender after processing DM
-			ack_message = {
-				"TYPE": "ACK",
-				"MESSAGE_ID": message_id,
-				"STATUS": "RECEIVED"
-			}
-			send_message(ack_message, addr)
+		# validate input fields
+		if not (from_user and to_user and content and message_id and timestamp and token):
+			peer_manager.logger.log_drop("Malformed DM message.")
+			return
+
+		# makes sure this message is intended for the user
+		my_user_id = peer_manager.own_profile.get("USER_ID")
+		if to_user != my_user_id:
+			peer_manager.logger.log_drop(f"Ignored DM not addressed to me: {to_user}")
+			return
+
+		# store the DM
+		peer_manager.add_dm(from_user, content, timestamp, message_id, token)
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
