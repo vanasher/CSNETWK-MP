@@ -41,5 +41,5 @@ class Logger:
 		self.log("RETRY", f"Attempt {attempt} {context}")
 
 	def set_verbose(self, state: bool):
-		self.log("LOGGER", f"Verbose mode {'enabled' if state else 'disabled'}.")
 		self.verbose = state
+		print(f"Verbose mode {'enabled' if state else 'disabled'}.")

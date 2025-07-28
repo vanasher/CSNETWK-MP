@@ -9,7 +9,8 @@ from core.broadcaster import broadcast_profile_periodically
 
 if __name__ == "__main__":
 	
-	logger = Logger(verbose=True)
+	verbose = True # default is verbose mode
+	logger = Logger(verbose)
 	peer_manager = PeerManager(logger)
 	udp = UDPHandler(logger, peer_manager, dispatch)
 	udp.start()
