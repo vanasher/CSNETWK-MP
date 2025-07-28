@@ -42,4 +42,4 @@ class Logger:
 
 	def set_verbose(self, state: bool):
 		self.verbose = state
-		print(f"Verbose mode {'enabled' if state else 'disabled'}.")
+		print(f"\nVerbose mode {'enabled' if state else 'disabled'}.")
