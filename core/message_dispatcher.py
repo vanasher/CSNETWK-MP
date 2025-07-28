@@ -17,11 +17,12 @@ def dispatch(message: dict, addr: str, peer_manager):
 	elif msg_type == "POST":
 		user_id = message.get("USER_ID")
 		content = message.get("CONTENT")
-		ttl = message.get("TTL")
+		ttl = int(message.get("TTL", 3600)) # default is 3600 per RFC
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
-		if user_id and content:
+		if peer_manager.is_following(user_id):
 			peer_manager.add_post(user_id, content, ttl, message_id, token)
+			peer_manager.logger.log_recv("POST", addr[0], message)
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")

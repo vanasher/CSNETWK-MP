@@ -1,3 +1,5 @@
+# do not think this file will be used anymore
+
 #just testing a CLI for the LSNP protocol for now
 
 # tool for crafting and sending LSNP messages manually for testing compliance

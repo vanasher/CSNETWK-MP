@@ -7,6 +7,7 @@ class PeerManager:
 		self.peers = {} # stores disctionary of peers by USER_ID
 						# user_id -> {display_name, status, posts: [], dms: []}
 		self.own_profile = None
+		self.following = set()
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -64,13 +65,14 @@ class PeerManager:
 		})
 
 	# add a new dm to the peer's dm list
-	def add_dm(self, user_id, content, timestamp=None, message_id=None):
+	def add_dm(self, user_id, content, timestamp=None, ttl=None, message_id=None, token=None):
 		if user_id in self.peers:
-			self.peers[user_id]['dms'].append({
+			self.peers[user_id]['posts'].append({
 				'content': content,
 				'timestamp': timestamp,
+				'ttl': ttl,
 				'message_id': message_id,
-				#'token': token
+				'token': token
 			})
 		else: # this else block handles previously unknown peers (have not yet recevied a PROFILE message from)
 			self.peers[user_id] = {
@@ -114,12 +116,45 @@ class PeerManager:
 	# remove a follower from a peer's followers list
 	def remove_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
 		if to_user in self.peers and 'followers' in self.peers[to_user]:
-			if from_user in self.peers[to_user]['followers']:
-				self.peers[to_user]['followers'].remove(from_user)
+			original_len = len(self.peers[to_user]['followers'])
+			self.peers[to_user]['followers'] = [
+				f for f in self.peers[to_user]['followers'] if f['user'] != from_user
+			]
+			if len(self.peers[to_user]['followers']) < original_len:
 				self.logger.info(f"User {from_user} has unfollowed {to_user}")
 		else:
 			self.logger.debug(f"UNFOLLOW: Peer {to_user} not found or has no followers")
+	
+	# func for following a user
+	def follow(self, user_id):
+		self.following.add(user_id)
+		self.logger.info(f"You are now following {user_id}")
+	
+	# func for checking if following a user
+	def is_following(self, user_id):
+		return user_id in self.following
+	
+	def get_display_name(self, user_id):
+		if user_id == self.own_profile.get("USER_ID"):
+			return self.own_profile.get("DISPLAY_NAME", user_id)
+		peer = self.peers.get(user_id)
+		return peer.get("display_name", user_id) if peer else user_id
 
+	# return a list of (user_id, ip_address) of peers who follow the current user
+	def get_follower_ips(self):
+		own_id = self.own_profile.get("USER_ID")
+		followers = []
+
+		for peer_id, peer_info in self.peers.items():
+			for follower in peer_info.get("followers", []):
+				if follower['user'] == own_id:
+					# Extract IP from peer_id
+					ip = peer_id.split("@")[-1]
+					followers.append((peer_id, ip))
+					break  # No need to keep checking this peer’s followers
+
+		return followers
+	
 	# returns a list of (user_id, display_name) for all known peers
 	def list_peers(self):
 		return [(uid, info['display_name']) for uid, info in self.peers.items()]
