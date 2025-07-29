@@ -25,6 +25,12 @@ def run_shell(logger, peer_manager):
 
 			# 'post' command to create a new post
 			elif cmd == "post":
+				
+				own_profile = peer_manager.own_profile
+				if not own_profile or "USER_ID" not in own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+				
 				content = input("Post content: ").strip()
 				if not content:
 					print("Post content cannot be empty.")
@@ -41,11 +47,6 @@ def run_shell(logger, peer_manager):
 
 				import time, random
 				now = int(time.time())
-
-				own_profile = peer_manager.own_profile
-				if not own_profile or "USER_ID" not in own_profile:
-					print("Profile not set. Please set your profile first using the 'profile' command.")
-					continue
 
 				user_id = own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"

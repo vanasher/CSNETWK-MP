@@ -2,7 +2,6 @@ import socket
 from parser.message_parser import craft_message
 import ipaddress
 import psutil
-# import netifaces as ni (this is commented out to avoid import errors in this environment since it requires additonal installation)
 
 def send_message(msg_dict, addr, udp_socket=None):
 	if udp_socket is None:
