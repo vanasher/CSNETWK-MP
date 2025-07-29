@@ -48,19 +48,19 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
-		if peer_manager.logger.verbose:
-			print(f"[PING] Received ping from {user_id}")
+		# if peer_manager.logger.verbose:
+		# 	print(f"[PING] Received ping from {user_id}")
 
 		# resgister peer if not already known (optional)
-		if user_id and user_id not in peer_manager.peers:
-				peer_manager.add_peer(user_id, user_id, "", None, None)
+		# if user_id and user_id not in peer_manager.peers:
+		# 		peer_manager.add_peer(user_id, user_id, "", None, None)
 
 	elif msg_type == "ACK":
 		message_id = message.get("MESSAGE_ID")
 		status = message.get("STATUS")
 
-		if peer_manager.logger.verbose:
-			print(f"[ACK] Received ACK for message ID {message_id} with status {status}")
+		# if peer_manager.logger.verbose:
+		# 	print(f"[ACK] Received ACK for message ID {message_id} with status {status}")
 
 	elif msg_type == "FOLLOW":
 		message_id = message.get("MESSAGE_ID")

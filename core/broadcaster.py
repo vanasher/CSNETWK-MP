@@ -5,7 +5,7 @@ from utils.network_utils import send_message
 import json
 from parser.message_parser import craft_message
 
-def broadcast_profile_periodically(logger, peer_manager, interval=30): # 30 secs interval (just for testing)
+def broadcast_profile_periodically(logger, peer_manager, interval=10): # 30 secs interval (just for testing)
                                                                        # should be 5 mins as per rubric milestone 2
     def broadcast_loop():
         while True:
@@ -14,8 +14,8 @@ def broadcast_profile_periodically(logger, peer_manager, interval=30): # 30 secs
             if profile and profile.get("USER_ID"):
                 send_message(profile, (config.BROADCAST_ADDR, config.PORT))
                 
-                lsnp_text = craft_message(profile)
-                logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", lsnp_text)
+                #lsnp_text = craft_message(profile)
+                logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
             else:
                 logger.log("PROFILE", "Own profile not set; skipping broadcast.")
             time.sleep(interval)

@@ -2,6 +2,7 @@ from utils.network_utils import send_message, get_local_ip
 from core.peer import PeerManager
 import json
 import config
+from parser.message_parser import craft_message
 
 def run_shell(logger, peer_manager):
 	print("LSNP Interactive Shell. Type 'help' for commands.")
@@ -96,7 +97,7 @@ def run_shell(logger, peer_manager):
 				try:
 					_, ip = recipient.split("@")
 					send_message(dm_message, (ip, config.PORT))
-					print("Direct message sent.")
+					logger.log_send("DM", ip, dm_message, peer_manager)
 				except ValueError:
 					print("Invalid recipient format. Use user@ip.")
 

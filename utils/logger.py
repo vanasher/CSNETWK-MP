@@ -10,22 +10,39 @@ class Logger:
 		if self.verbose:
 			now = datetime.datetime.now().strftime("%H:%M:%S")
 			print(f"\n[{now}] \n[{tag}] \n{message}")
-			
-	def log_send(self, msg_type, ip, msg=None):
-		if msg_type != "PROFILE":
-			self.log("SEND >", f"To {ip} | TYPE: {msg_type}")
-		if msg:
-			self.log("SEND >", msg)
+		else:
+			print(f"\n{message}")
+
+	def log_send(self, msg_type, ip, msg=None, peer_manager=None):
+		if self.verbose:
+			if msg:
+				if isinstance(msg, dict):
+					lsnp_text = craft_message(msg)
+					self.log("SEND >", lsnp_text)
+		else:
+			if msg_type == "PROFILE":
+				print(f"\n\nBroadcasting profile...")
+			elif msg_type == "POST":
+				print(f"\n\nSuccessfully created post.")
+			elif msg_type == "DM":
+				to_user_id = msg.get("TO")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(to_user_id)
+					print(f"\n\nSent message to {display_name}")
 
 	def log_recv(self, msg_type, ip, msg=None):
-		self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
-		if msg:
-			# if msg is a dict (parsed message), convert to LSNP text
-			if isinstance(msg, dict):
-				lsnp_text = craft_message(msg)
-				self.log("RECV <", lsnp_text.strip())
-			else:
-				self.log("RECV <", msg)
+		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
+		if self.verbose:
+			if msg:
+				# if msg is a dict (parsed message), convert to LSNP text
+				if isinstance(msg, dict):
+					lsnp_text = craft_message(msg)
+					self.log("RECV <", lsnp_text)
+				else:
+					self.log("RECV <", msg)
+		else:
+			if msg.get("TYPE") == "PROFILE":
+				print(f"\n\nName: {msg.get('DISPLAY_NAME', 'Unknown')} | Status: {msg.get('STATUS', 'N/A')}")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"
