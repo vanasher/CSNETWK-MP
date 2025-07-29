@@ -2,6 +2,7 @@ import socket
 from parser.message_parser import craft_message
 import ipaddress
 import psutil
+import struct
 
 def send_message(msg_dict, addr, udp_socket=None):
 	if udp_socket is None:
@@ -40,6 +41,28 @@ def get_local_ip():
 #                 return str(interface.network.broadcast_address)
 #     return "255.255.255.255"  # fallback
 
+
+# compute the broadcast address from an IP and netmask
+def compute_broadcast_address(ip_str, netmask_str):
+    ip = struct.unpack('!I', socket.inet_aton(ip_str))[0]
+    netmask = struct.unpack('!I', socket.inet_aton(netmask_str))[0]
+    broadcast = ip | ~netmask & 0xFFFFFFFF
+    return socket.inet_ntoa(struct.pack('!I', broadcast))
+
+# testing if this works better
+def get_manual_broadcast():
+    for iface_name, addrs in psutil.net_if_addrs().items():
+        for addr in addrs:
+            if (
+                addr.family == socket.AF_INET and
+                not addr.address.startswith("127.") and
+                not addr.address.startswith("169.254.")  # Skip loopback and link-local
+            ):
+                ip = addr.address
+                netmask = addr.netmask
+                if ip and netmask:
+                    return compute_broadcast_address(ip, netmask)
+    return "255.255.255.255"
 
 def get_broadcast_address():
 	for iface_name, addrs in psutil.net_if_addrs().items():

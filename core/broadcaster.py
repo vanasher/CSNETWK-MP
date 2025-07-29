@@ -5,7 +5,7 @@ from utils.network_utils import send_message
 import json
 from parser.message_parser import craft_message
 
-def broadcast_profile_periodically(logger, peer_manager, interval=300): # 30 secs interval (just for testing)
+def broadcast_profile_periodically(logger, peer_manager, interval=30): # 30 secs interval (just for testing)
                                                                        # should be 5 mins as per rubric milestone 2
     def broadcast_loop():
         while True:
