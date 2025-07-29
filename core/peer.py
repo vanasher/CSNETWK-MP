@@ -88,7 +88,7 @@ class PeerManager:
 				'timestamp': timestamp,
 				'message_id': message_id
 			})
-			self.logger.info(f"User {from_user} has followed {to_user}")
+			self.logger.log("FOLLOW", f"User {from_user} has followed {to_user}")
 
 	# remove a follower from a peer's followers list
 	def remove_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
@@ -98,14 +98,14 @@ class PeerManager:
 				f for f in self.peers[to_user]['followers'] if f['user'] != from_user
 			]
 			if len(self.peers[to_user]['followers']) < original_len:
-				self.logger.info(f"User {from_user} has unfollowed {to_user}")
+				self.logger.log("UNFOLLOW", f"User {from_user} has unfollowed {to_user}")
 		else:
-			self.logger.debug(f"UNFOLLOW: Peer {to_user} not found or has no followers")
+			self.logger.log("UNFOLLOW", f"Peer {to_user} not found or has no followers")
 	
 	# func for following a user
 	def follow(self, user_id):
 		self.following.add(user_id)
-		self.logger.info(f"You are now following {user_id}")
+		self.logger.log("FOLLOW", f"You are now following {user_id}")
 	
 	# func for checking if following a user
 	def is_following(self, user_id):
@@ -149,3 +149,61 @@ class PeerManager:
 	# returns a list of (user_id, display_name) for all known peers
 	def list_peers(self):
 		return [(uid, info['display_name']) for uid, info in self.peers.items()]
+	
+	# show detailed information about a peer including posts and DMs
+	def show_peer_details(self, user_id, display_name):
+		"""Display detailed information about a peer including their posts and DMs"""
+		peer_info = self.peers.get(user_id)
+		if not peer_info:
+			print(f"Peer '{user_id}' not found.")
+			return
+		
+		print(f"\nPeer: {display_name} ({user_id})")
+		print(f"Status: {peer_info.get('status', 'No status')}")
+		
+		# Show following status
+		following_status = "Following" if self.is_following(user_id) else "Not Following"
+		print(f"Following Status: {following_status}")
+		
+		# Show followers count
+		followers_count = len(peer_info.get('followers', []))
+		print(f"Followers: {followers_count}")
+		
+		# Show Posts
+		posts = peer_info.get('posts', [])
+		print(f"\nPosts ({len(posts)}):")
+		if posts:
+			for i, post in enumerate(posts, 1):
+				content = post.get('content', 'No content')
+				message_id = post.get('message_id', 'N/A')
+				ttl = post.get('ttl', 'N/A')
+				print(f"  {i}. {content}")
+				print(f"     ID: {message_id} | TTL: {ttl}")
+		else:
+			print("  No posts from this peer.")
+		
+		# Show DMs
+		dms = peer_info.get('dms', [])
+		print(f"\nDirect Messages ({len(dms)}):")
+		if dms:
+			for i, dm in enumerate(dms, 1):
+				content = dm.get('content', 'No content')
+				timestamp = dm.get('timestamp', 'N/A')
+				message_id = dm.get('message_id', 'N/A')
+				
+				# Convert timestamp to readable format if it's a number
+				try:
+					if isinstance(timestamp, (int, float)) or (isinstance(timestamp, str) and timestamp.isdigit()):
+						import datetime
+						readable_time = datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+					else:
+						readable_time = str(timestamp)
+				except:
+					readable_time = str(timestamp)
+				
+				print(f"  {i}. {content}")
+				print(f"     ID: {message_id} | Time: {readable_time}")
+		else:
+			print("  No direct messages from this peer.")
+		
+		print()  # Empty line for spacing

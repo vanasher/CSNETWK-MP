@@ -200,6 +200,37 @@ def run_shell(logger, peer_manager):
 				else:
 					print("  Not following anyone.")
 
+			# 'show' command to show detailed peer information with posts and DMs
+			elif cmd == "show":
+				target_user = input("Enter user ID to show details (or 'all' for all peers): ").strip()
+				
+				if target_user.lower() == "all":
+					print("\n=== ALL KNOWN PEERS WITH POSTS AND DMs ===")
+					peers = peer_manager.list_peers()
+					if not peers:
+						print("No peers discovered yet.")
+					else:
+						for user_id, display_name in peers:
+							peer_manager.show_peer_details(user_id, display_name)
+							print("-" * 50)
+				else:
+					if not target_user:
+						print("User ID cannot be empty.")
+						continue
+					
+					# Check if peer exists
+					peer_info = peer_manager.peers.get(target_user)
+					if not peer_info:
+						print(f"Peer '{target_user}' not found.")
+						print("Available peers:")
+						peers = peer_manager.list_peers()
+						for user_id, display_name in peers:
+							print(f"  {display_name} ({user_id})")
+						continue
+					
+					print(f"\n=== PEER DETAILS: {target_user} ===")
+					peer_manager.show_peer_details(target_user, peer_info['display_name'])
+
 			# switching verbose/non-verbose mode
 			elif cmd.startswith("verbose"):
 				parts = cmd.split()
@@ -216,6 +247,7 @@ def run_shell(logger, peer_manager):
 				print("  follow     - Follow another user")
 				print("  unfollow   - Unfollow a user")
 				print("  list       - Show known peers and following status")
+				print("  show       - Show detailed peer information with posts and DMs")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  exit       - Quit the application")
 

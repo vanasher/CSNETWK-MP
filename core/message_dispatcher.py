@@ -20,9 +20,13 @@ def dispatch(message: dict, addr: str, peer_manager):
 		ttl = int(message.get("TTL", 3600)) # default is 3600 per RFC
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
-		if peer_manager.is_following(user_id):
-			peer_manager.add_post(user_id, content, ttl, message_id, token)
-			# peer_manager.logger.log_recv("POST", addr[0], message)
+		if user_id and content:
+			# Only store posts from users we're following
+			if peer_manager.is_following(user_id):
+				peer_manager.add_post(user_id, content, None, ttl, message_id)
+				peer_manager.logger.log("POST", f"Received post from {user_id}: {content[:50]}...")
+			else:
+				peer_manager.logger.log("POST", f"Ignored post from unfollowed user: {user_id}")
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")
@@ -45,6 +49,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		# store the DM
 		peer_manager.add_dm(from_user, content, timestamp, message_id, token)
+		peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
@@ -70,7 +75,8 @@ def dispatch(message: dict, addr: str, peer_manager):
 		token = message.get("TOKEN")
 
 		if from_user and to_user:
-			peer_manager.add_follower(message_id, to_user, from_user, timestamp, token)
+			peer_manager.add_follower(to_user, from_user, token, timestamp, message_id)
+			peer_manager.logger.log("FOLLOW", f"{from_user} is now following {to_user}")
 
 	elif msg_type == "UNFOLLOW":
 		from_user = message.get("FROM")
@@ -81,5 +87,6 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		peer_manager.remove_follower(to_user, from_user, token, timestamp, message_id)
 
+		# Only show unfollow notification in non-verbose mode
 		if not peer_manager.logger.verbose:
 			print(f"User {from_user} has unfollowed you")
