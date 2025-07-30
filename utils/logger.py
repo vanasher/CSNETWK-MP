@@ -6,11 +6,11 @@ class Logger:
 	def __init__(self, verbose):
 		self.verbose = verbose
 
-	def set_verbose(self, verbose):
-		"""Toggle verbose mode on/off"""
-		self.verbose = verbose
-		mode = "enabled" if verbose else "disabled"
-		print(f"Verbose logging {mode}.")
+	# def set_verbose(self, verbose):
+	# 	"""Toggle verbose mode on/off"""
+	# 	self.verbose = verbose
+	# 	mode = "enabled" if verbose else "disabled"
+	# 	print(f"Verbose logging {mode}.")
 
 	def log(self, tag, message):
 		if self.verbose:
