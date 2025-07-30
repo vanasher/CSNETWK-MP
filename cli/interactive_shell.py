@@ -24,6 +24,13 @@ def run_shell(logger, peer_manager):
 				peer_manager.set_own_profile(username, display_name, status)
 				logger.log("SHELL", f"Profile set for {username} and will be broadcast periodically.")
 
+				# initial broadcast (broadcast a profile immediately after setting it)
+				# added this so peers would immediately add the new user to known peers
+				# after initial broadcast, the profile will be broadcast periodically
+				profile = peer_manager.get_own_profile()
+				logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
+				send_message(profile, (config.BROADCAST_ADDR, config.PORT))
+
 			# 'post' command to create a new post
 			elif cmd == "post":
 				

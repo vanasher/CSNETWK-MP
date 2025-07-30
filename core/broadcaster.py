@@ -5,7 +5,7 @@ from utils.network_utils import send_message
 import json
 from parser.message_parser import craft_message
 
-def broadcast_profile_periodically(logger, peer_manager, interval=20): # set the interval to 20 seconds for testing
+def broadcast_profile_periodically(logger, peer_manager, interval=300): # set the interval to 20 seconds for testing
     def broadcast_loop():
         while True:
             profile = peer_manager.get_own_profile()
@@ -15,7 +15,7 @@ def broadcast_profile_periodically(logger, peer_manager, interval=20): # set the
                 
                 #lsnp_text = craft_message(profile)
                 logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
-            else:
-                logger.log("PROFILE", "Own profile not set; skipping broadcast.")
+            # else:
+            #     logger.log("PROFILE", "Own profile not set; skipping broadcast.")
             time.sleep(interval)
     threading.Thread(target=broadcast_loop, daemon=True).start()

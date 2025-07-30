@@ -25,6 +25,8 @@ class Logger:
 				if isinstance(msg, dict):
 					lsnp_text = craft_message(msg)
 					self.log("SEND >", lsnp_text)
+
+		# non-verbose mode (sending messages)
 		else:
 			if msg_type == "PROFILE":
 				print(f"\n\nBroadcasting profile...")
@@ -36,7 +38,7 @@ class Logger:
 					display_name = peer_manager.get_display_name(to_user_id)
 					print(f"\n\nSent message to {display_name}")
 
-	def log_recv(self, msg_type, ip, msg=None):
+	def log_recv(self, msg_type, ip, msg=None, peer_manager=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
 		if self.verbose:
 			if msg:
@@ -46,9 +48,23 @@ class Logger:
 					self.log("RECV <", lsnp_text)
 				else:
 					self.log("RECV <", msg)
+
+		# non-verbose mode (receving messages)
 		else:
 			if msg.get("TYPE") == "PROFILE":
 				print(f"\n\nName: {msg.get('DISPLAY_NAME', 'Unknown')} | Status: {msg.get('STATUS', 'N/A')}")
+
+			if msg.get("TYPE") == "POST":
+				user_id = msg.get("USER_ID")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nNew post from {display_name}: \n{msg.get('CONTENT', 'No content')}")
+
+			if msg.get("TYPE") == "DM":
+				user_id = msg.get("FROM")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nFrom {display_name}: \n{msg.get('CONTENT', 'No content')}")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

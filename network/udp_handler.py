@@ -33,7 +33,7 @@ class UDPHandler:
 				data, addr = self.sock.recvfrom(65535) # 65535 -> maximum size of a UDP datagram
 				raw = data.decode("utf-8")
 				message = parse_message(raw)
-				self.logger.log_recv(message.get("TYPE", "UNKNOWN"), addr[0], message)
+				self.logger.log_recv(message.get("TYPE", "UNKNOWN"), addr[0], message, self.peer_manager)
 				self.dispatch(message, addr[0], self.peer_manager)
 			except Exception as e:
 				self.logger.log("ERROR", str(e))
