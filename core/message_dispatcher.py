@@ -24,9 +24,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 			# Only store posts from users we're following
 			if peer_manager.is_following(user_id):
 				peer_manager.add_post(user_id, content, None, ttl, message_id)
-				peer_manager.logger.log("POST", f"Received post from {user_id}: {content[:50]}...")
-			else:
-				peer_manager.logger.log("POST", f"Ignored post from unfollowed user: {user_id}")
+				#peer_manager.logger.log("POST", f"Received post from {user_id}: {content[:50]}...")
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")
@@ -49,7 +47,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		# store the DM
 		peer_manager.add_dm(from_user, content, timestamp, message_id, token)
-		peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
+		# peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
