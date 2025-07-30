@@ -1,4 +1,5 @@
 from utils.network_utils import send_message
+import config
 
 # Routes incoming LSNP messages to appropriate PeerManager handlers based on the message type
 def dispatch(message: dict, addr: str, peer_manager):
@@ -48,6 +49,15 @@ def dispatch(message: dict, addr: str, peer_manager):
 		# store the DM
 		peer_manager.add_dm(from_user, content, timestamp, message_id, token)
 		# peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
+
+		# send an ACK back to the sender
+		if message_id:
+			ack_msg = {
+				"TYPE": "ACK",
+				"MESSAGE_ID": message_id,
+				"STATUS": "RECEIVED"
+			}
+			send_message(ack_msg, (addr, config.PORT))
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
