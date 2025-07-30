@@ -5,7 +5,7 @@ from utils.network_utils import send_message
 import json
 from parser.message_parser import craft_message
 
-def broadcast_profile_periodically(logger, peer_manager, interval=300):
+def broadcast_profile_periodically(logger, peer_manager, interval=20): # set the interval to 20 seconds for testing
     def broadcast_loop():
         while True:
             profile = peer_manager.get_own_profile()
