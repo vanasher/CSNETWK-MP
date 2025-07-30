@@ -7,11 +7,11 @@ class Logger:
 	def __init__(self, verbose):
 		self.verbose = verbose
 
-	def set_verbose(self, verbose):
-		"""Toggle verbose mode on/off"""
-		self.verbose = verbose
-		mode = "enabled" if verbose else "disabled"
-		print(f"Verbose logging {mode}.")
+	# def set_verbose(self, verbose):
+	# 	"""Toggle verbose mode on/off"""
+	# 	self.verbose = verbose
+	# 	mode = "enabled" if verbose else "disabled"
+	# 	print(f"Verbose logging {mode}.")
 
 	def log(self, tag, message):
 		if self.verbose:
@@ -26,6 +26,8 @@ class Logger:
 				if isinstance(msg, dict):
 					lsnp_text = craft_message(msg)
 					self.log("SEND >", lsnp_text)
+
+		# non-verbose mode (sending messages)
 		else:
 			if msg_type == "PROFILE":
 				print(f"\n\nBroadcasting profile...")
@@ -39,7 +41,7 @@ class Logger:
 			elif msg_type == "LIKE":
 				print(f"\n\nLike sent successfully.")
 
-	def log_recv(self, msg_type, ip, msg=None):
+	def log_recv(self, msg_type, ip, msg=None, peer_manager=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
 		if self.verbose:
 			if msg:
@@ -49,6 +51,8 @@ class Logger:
 					self.log("RECV <", lsnp_text)
 				else:
 					self.log("RECV <", msg)
+
+		# non-verbose mode (receving messages)
 		else:
 			if msg.get("TYPE") == "PROFILE":
 				display_name = msg.get('DISPLAY_NAME', 'Unknown')
@@ -57,6 +61,18 @@ class Logger:
 				print(f"\n\nName: {display_name} | Status: {status}")
 				if avatar_info != "No profile picture":
 					print(f"Avatar: {avatar_info}")
+
+			if msg.get("TYPE") == "POST":
+				user_id = msg.get("USER_ID")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nNew post from {display_name}: \n{msg.get('CONTENT', 'No content')}")
+
+			if msg.get("TYPE") == "DM":
+				user_id = msg.get("FROM")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nFrom {display_name}: \n{msg.get('CONTENT', 'No content')}")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

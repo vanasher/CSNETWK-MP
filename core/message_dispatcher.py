@@ -50,7 +50,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		# store the DM
 		peer_manager.add_dm(from_user, content, timestamp, message_id, token)
-		peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
+		# peer_manager.logger.log("DM", f"Received DM from {from_user}: {content[:50]}...")
 
 	elif msg_type == "PING":
 		user_id = message.get("USER_ID")
