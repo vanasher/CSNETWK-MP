@@ -1,8 +1,12 @@
 from utils.network_utils import get_local_ip
+from utils.network_utils import send_message
+import config
 
 #  keeps track of all known peers and their data in a dictionary
 class PeerManager:
 	def __init__(self, logger):
+		self.profile_updated = False # flag to indicate if the profile was updated
+		self.profile_created = False # flag to indicate if the profile was created
 		self.logger = logger
 		self.peers = {} # stores disctionary of peers by USER_ID
 						# user_id -> {display_name, status, posts: [], dms: []}
@@ -13,6 +17,9 @@ class PeerManager:
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
 		ip = get_local_ip()
 		user_id = f"{username}@{ip}"
+
+		is_first_time = not self.own_profile # check if it's the first time setting the profile
+
 		self.own_profile = {
 			"TYPE": "PROFILE",
 			"USER_ID": user_id,
@@ -22,7 +29,18 @@ class PeerManager:
 			"AVATAR_ENCODING": avatar_encoding,
 			"AVATAR_DATA": avatar_data
 		}
-		self.logger.log("PEER", f"Own profile updated with USER_ID {user_id}.")
+		self.profile_updated = not is_first_time
+		self.profile_created = True
+
+		self.logger.log("PEER", f"Own profile {'created' if is_first_time else 'updated'} with USER_ID {user_id}.")
+
+		# initial broadcast (broadcast a profile immediately after setting it)
+		# added this so peers would immediately add the new user to known peers
+		# after initial broadcast, the message will be broadcast periodically
+		if is_first_time:
+			profile = self.get_own_profile()
+			self.logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
+			send_message(profile, (config.BROADCAST_ADDR, config.PORT))
 
 	# for broadcasting own profile periodically
 	def get_own_profile(self):

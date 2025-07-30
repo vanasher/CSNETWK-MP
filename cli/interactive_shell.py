@@ -17,19 +17,17 @@ def run_shell(logger, peer_manager):
 			
 			# 'profile' command to set own profile
 			elif cmd == "profile":
-				username = input("Username: ").strip()
+				# If no profile is set, prompt for username
+				if peer_manager.own_profile is None:
+					username = input("Username: ").strip()
+				# If profile is set, use the existing username (user can't change it after setting it already)
+				else:
+					username = peer_manager.own_profile["USER_ID"].split('@')[0]
 				display_name = input("Display name: ").strip()
 				status = input("Status: ").strip()
 
 				peer_manager.set_own_profile(username, display_name, status)
 				logger.log("SHELL", f"Profile set for {username} and will be broadcast periodically.")
-
-				# initial broadcast (broadcast a profile immediately after setting it)
-				# added this so peers would immediately add the new user to known peers
-				# after initial broadcast, the profile will be broadcast periodically
-				profile = peer_manager.get_own_profile()
-				logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
-				send_message(profile, (config.BROADCAST_ADDR, config.PORT))
 
 			# 'post' command to create a new post
 			elif cmd == "post":
