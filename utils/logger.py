@@ -1,5 +1,6 @@
 import datetime
 from parser.message_parser import craft_message
+from utils.image_utils import display_avatar_info
 
 # logger class that supports verbose mode
 class Logger:
@@ -35,6 +36,8 @@ class Logger:
 				if peer_manager:
 					display_name = peer_manager.get_display_name(to_user_id)
 					print(f"\n\nSent message to {display_name}")
+			elif msg_type == "LIKE":
+				print(f"\n\nLike sent successfully.")
 
 	def log_recv(self, msg_type, ip, msg=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
@@ -48,7 +51,12 @@ class Logger:
 					self.log("RECV <", msg)
 		else:
 			if msg.get("TYPE") == "PROFILE":
-				print(f"\n\nName: {msg.get('DISPLAY_NAME', 'Unknown')} | Status: {msg.get('STATUS', 'N/A')}")
+				display_name = msg.get('DISPLAY_NAME', 'Unknown')
+				status = msg.get('STATUS', 'N/A')
+				avatar_info = display_avatar_info(msg.get('AVATAR_TYPE'), msg.get('AVATAR_DATA'))
+				print(f"\n\nName: {display_name} | Status: {status}")
+				if avatar_info != "No profile picture":
+					print(f"Avatar: {avatar_info}")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

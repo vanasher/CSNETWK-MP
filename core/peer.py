@@ -53,14 +53,25 @@ class PeerManager:
 				self.peers[user_id]['avatar_data'] = avatar_data
 			if 'followers' not in self.peers[user_id]:
 				self.peers[user_id]['followers'] = []
+			
+			# Ensure existing posts have likes lists
+			for post in self.peers[user_id].get('posts', []):
+				if 'likes' not in post:
+					post['likes'] = []
 
 	# add a new post to the peer's post list
 	def add_post(self, user_id, content, timestamp=None, ttl=None, message_id=None):
 		if user_id in self.peers:
+			if timestamp is None:
+				import time
+				timestamp = int(time.time())
+			
 			self.peers[user_id]['posts'].append({
 			'content': content,
+			'timestamp': timestamp,
 			'ttl': ttl,
-			'message_id': message_id
+			'message_id': message_id,
+			'likes': []  # Initialize likes list for each post
 			#token: token
 		})
 
@@ -176,9 +187,32 @@ class PeerManager:
 			for i, post in enumerate(posts, 1):
 				content = post.get('content', 'No content')
 				message_id = post.get('message_id', 'N/A')
+				timestamp = post.get('timestamp', 'N/A')
 				ttl = post.get('ttl', 'N/A')
+				likes_count = len(post.get('likes', []))
+				
+				# Convert timestamp to readable format if it's a number
+				try:
+					if isinstance(timestamp, (int, float)) or (isinstance(timestamp, str) and timestamp.isdigit()):
+						import datetime
+						readable_time = datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+					else:
+						readable_time = str(timestamp)
+				except:
+					readable_time = str(timestamp)
+				
 				print(f"  {i}. {content}")
-				print(f"     ID: {message_id} | TTL: {ttl}")
+				print(f"     ID: {message_id} | Time: {readable_time} | TTL: {ttl} | Likes: {likes_count}")
+				
+				# Show likes if any
+				if likes_count > 0:
+					likes = post.get('likes', [])
+					for like in likes[:3]:  # Show first 3 likes
+						liker = self.get_display_name(like.get('liker_id', 'Unknown'))
+						action = like.get('action', 'LIKE')
+						print(f"       {'👍' if action == 'LIKE' else '👎'} {liker}")
+					if likes_count > 3:
+						print(f"       ... and {likes_count - 3} more")
 		else:
 			print("  No posts from this peer.")
 		
@@ -207,3 +241,48 @@ class PeerManager:
 			print("  No direct messages from this peer.")
 		
 		print()  # Empty line for spacing
+	
+	# add a like to a specific post by timestamp
+	def add_like_to_post(self, post_author, post_timestamp, liker_id, action, timestamp, token):
+		"""Add a like to a specific post by timestamp"""
+		if post_author not in self.peers:
+			return False
+		
+		# Find the post by timestamp
+		for post in self.peers[post_author].get('posts', []):
+			if str(post.get('timestamp')) == str(post_timestamp):
+				# Initialize likes list if not present
+				if 'likes' not in post:
+					post['likes'] = []
+				
+				if action == "LIKE":
+					# Check if user already liked this post
+					for like in post['likes']:
+						if like.get('liker_id') == liker_id:
+							self.logger.log("LIKE", f"User {liker_id} already liked this post")
+							return False
+					
+					# Add the like
+					post['likes'].append({
+						'liker_id': liker_id,
+						'action': action,
+						'timestamp': timestamp,
+						'token': token
+					})
+					
+					self.logger.log("LIKE", f"User {liker_id} liked post at timestamp {post_timestamp}")
+					return True
+					
+				elif action == "UNLIKE":
+					# Remove the like
+					original_len = len(post['likes'])
+					post['likes'] = [like for like in post['likes'] if like.get('liker_id') != liker_id]
+					
+					if len(post['likes']) < original_len:
+						self.logger.log("LIKE", f"User {liker_id} unliked post at timestamp {post_timestamp}")
+						return True
+					else:
+						self.logger.log("LIKE", f"User {liker_id} tried to unlike post they haven't liked")
+						return False
+		
+		return False

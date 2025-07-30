@@ -1,5 +1,6 @@
 from utils.network_utils import send_message, get_local_ip
 from core.peer import PeerManager
+from utils.image_utils import encode_image_to_base64, get_supported_extensions, is_valid_image_file
 import json
 import config
 from parser.message_parser import craft_message
@@ -20,8 +21,31 @@ def run_shell(logger, peer_manager):
 				username = input("Username: ").strip()
 				display_name = input("Display name: ").strip()
 				status = input("Status: ").strip()
+				
+				# Ask for profile picture
+				avatar_type = None
+				avatar_encoding = None
+				avatar_data = None
+				
+				use_avatar = input("Add profile picture? (y/n): ").strip().lower()
+				if use_avatar in ['y', 'yes']:
+					image_path = input("Enter path to image file: ").strip()
+					if image_path:
+						try:
+							if not is_valid_image_file(image_path):
+								print("Invalid image file or file not found.")
+								supported = get_supported_extensions()
+								print(f"Supported formats: {', '.join(supported)}")
+							else:
+								mime_type, base64_data, size_bytes = encode_image_to_base64(image_path)
+								avatar_type = mime_type
+								avatar_encoding = "base64"
+								avatar_data = base64_data
+								print(f"Profile picture added: {mime_type} ({size_bytes} bytes)")
+						except Exception as e:
+							print(f"Error processing image: {e}")
 
-				peer_manager.set_own_profile(username, display_name, status)
+				peer_manager.set_own_profile(username, display_name, status, avatar_type, avatar_encoding, avatar_data)
 				logger.log("SHELL", f"Profile set for {username} and will be broadcast periodically.")
 
 			# 'post' command to create a new post
@@ -57,6 +81,7 @@ def run_shell(logger, peer_manager):
 					"TYPE": "POST",
 					"USER_ID": user_id,
 					"CONTENT": content,
+					"TIMESTAMP": now,
 					"TTL": ttl,
 					"MESSAGE_ID": message_id,
 					"TOKEN": token
@@ -231,6 +256,114 @@ def run_shell(logger, peer_manager):
 					print(f"\n=== PEER DETAILS: {target_user} ===")
 					peer_manager.show_peer_details(target_user, peer_info['display_name'])
 
+			# 'like' command to like a post
+			elif cmd == "like":
+				if not peer_manager.own_profile or "USER_ID" not in peer_manager.own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+				
+				post_timestamp = input("Enter post timestamp to like: ").strip()
+				if not post_timestamp:
+					print("Post timestamp cannot be empty.")
+					continue
+				
+				# Find the post by timestamp and its author
+				post_author = None
+				post_found = False
+				post_content = None
+				
+				for user_id, peer_info in peer_manager.peers.items():
+					for post in peer_info.get('posts', []):
+						if str(post.get('timestamp')) == post_timestamp:
+							post_author = user_id
+							post_found = True
+							post_content = post.get('content', '')
+							break
+					if post_found:
+						break
+				
+				if not post_found:
+					print(f"Post with timestamp '{post_timestamp}' not found.")
+					continue
+				
+				import time, random
+				now = int(time.time())
+				sender = peer_manager.own_profile["USER_ID"]
+				token = f"{sender}|{now + 3600}|broadcast"
+				
+				like_message = {
+					"TYPE": "LIKE",
+					"FROM": sender,
+					"TO": post_author,
+					"POST_TIMESTAMP": post_timestamp,
+					"ACTION": "LIKE",
+					"TIMESTAMP": now,
+					"TOKEN": token
+				}
+				
+				# Send like to post author
+				try:
+					_, author_ip = post_author.split("@")
+					send_message(like_message, (author_ip, config.PORT))
+					print(f"Like sent for post at timestamp {post_timestamp}")
+					logger.log_send("LIKE", author_ip, like_message)
+				except ValueError:
+					print("Invalid post author format.")
+
+			# 'unlike' command to unlike a post
+			elif cmd == "unlike":
+				if not peer_manager.own_profile or "USER_ID" not in peer_manager.own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+				
+				post_timestamp = input("Enter post timestamp to unlike: ").strip()
+				if not post_timestamp:
+					print("Post timestamp cannot be empty.")
+					continue
+				
+				# Find the post by timestamp and its author
+				post_author = None
+				post_found = False
+				post_content = None
+				
+				for user_id, peer_info in peer_manager.peers.items():
+					for post in peer_info.get('posts', []):
+						if str(post.get('timestamp')) == post_timestamp:
+							post_author = user_id
+							post_found = True
+							post_content = post.get('content', '')
+							break
+					if post_found:
+						break
+				
+				if not post_found:
+					print(f"Post with timestamp '{post_timestamp}' not found.")
+					continue
+				
+				import time, random
+				now = int(time.time())
+				sender = peer_manager.own_profile["USER_ID"]
+				token = f"{sender}|{now + 3600}|broadcast"
+				
+				unlike_message = {
+					"TYPE": "LIKE",
+					"FROM": sender,
+					"TO": post_author,
+					"POST_TIMESTAMP": post_timestamp,
+					"ACTION": "UNLIKE",
+					"TIMESTAMP": now,
+					"TOKEN": token
+				}
+				
+				# Send unlike to post author
+				try:
+					_, author_ip = post_author.split("@")
+					send_message(unlike_message, (author_ip, config.PORT))
+					print(f"Unlike sent for post at timestamp {post_timestamp}")
+					logger.log_send("LIKE", author_ip, unlike_message)
+				except ValueError:
+					print("Invalid post author format.")
+
 			# switching verbose/non-verbose mode
 			elif cmd.startswith("verbose"):
 				parts = cmd.split()
@@ -241,11 +374,13 @@ def run_shell(logger, peer_manager):
 
 			elif cmd == "help":
 				print("Available commands:")
-				print("  profile    - Set your user profile")
+				print("  profile    - Set your user profile (with optional profile picture)")
 				print("  post       - Create a new post")
 				print("  dm         - Send a direct message")
 				print("  follow     - Follow another user")
 				print("  unfollow   - Unfollow a user")
+				print("  like       - Like a post by timestamp")
+				print("  unlike     - Unlike a post by timestamp")
 				print("  list       - Show known peers and following status")
 				print("  show       - Show detailed peer information with posts and DMs")
 				print("  verbose [on|off] - Toggle verbose logging")

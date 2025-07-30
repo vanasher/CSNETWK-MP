@@ -97,6 +97,20 @@ def craft_ack(args):
 	}
 	return msg
 
+def craft_like(args):
+	"""Craft a LIKE message"""
+	timestamp = int(time.time())
+	msg = {
+		"TYPE": "LIKE",
+		"FROM": args.from_user,
+		"TO": args.to_user,
+		"POST_TIMESTAMP": args.post_timestamp,
+		"ACTION": args.action,
+		"TIMESTAMP": timestamp,
+		"TOKEN": args.token if args.token else f"{args.from_user}|{timestamp + 3600}|broadcast"
+	}
+	return msg
+
 def simulate_message_flow(args):
 	"""Simulate a basic message flow for testing"""
 	logger = Logger(verbose=args.verbose)
@@ -200,6 +214,15 @@ def main():
 	ack_parser.add_argument("--status", default="RECEIVED", help="ACK status")
 	ack_parser.add_argument("--send-to", help="Target address (ip:port)")
 
+	# LIKE command
+	like_parser = subparsers.add_parser("like", help="Send a LIKE message")
+	like_parser.add_argument("--from-user", required=True, help="User who likes the post")
+	like_parser.add_argument("--to-user", required=True, help="Author of the post")
+	like_parser.add_argument("--post-timestamp", required=True, help="Timestamp of the post to like")
+	like_parser.add_argument("--action", choices=["LIKE", "UNLIKE"], default="LIKE", help="Action to perform")
+	like_parser.add_argument("--token", help="Authentication token (auto-generated if not provided)")
+	like_parser.add_argument("--send-to", help="Target address (ip:port)")
+
 	# SIMULATE command
 	simulate_parser = subparsers.add_parser("simulate", help="Simulate message flows for testing")
 	simulate_parser.add_argument("--simulation", required=True, 
@@ -222,7 +245,8 @@ def main():
 		"follow": craft_follow,
 		"unfollow": craft_unfollow,
 		"ping": craft_ping,
-		"ack": craft_ack
+		"ack": craft_ack,
+		"like": craft_like
 	}
 
 	if args.command == "simulate":
@@ -251,6 +275,8 @@ def main():
 					print(f"PING from {msg['USER_ID']}")
 				elif msg["TYPE"] == "ACK":
 					print(f"ACK for message {msg['MESSAGE_ID']}: {msg['STATUS']}")
+				elif msg["TYPE"] == "LIKE":
+					print(f"LIKE from {msg['FROM']} to {msg['TO']}: {msg['ACTION']} post at {msg['POST_TIMESTAMP']}")
 			
 			# Send message if address provided
 			send_to = getattr(args, 'send_to', None)

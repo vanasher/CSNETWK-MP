@@ -17,13 +17,14 @@ def dispatch(message: dict, addr: str, peer_manager):
 	elif msg_type == "POST":
 		user_id = message.get("USER_ID")
 		content = message.get("CONTENT")
+		timestamp = message.get("TIMESTAMP")
 		ttl = int(message.get("TTL", 3600)) # default is 3600 per RFC
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
 		if user_id and content:
 			# Only store posts from users we're following
 			if peer_manager.is_following(user_id):
-				peer_manager.add_post(user_id, content, None, ttl, message_id)
+				peer_manager.add_post(user_id, content, timestamp, ttl, message_id)
 				peer_manager.logger.log("POST", f"Received post from {user_id}: {content[:50]}...")
 			else:
 				peer_manager.logger.log("POST", f"Ignored post from unfollowed user: {user_id}")
@@ -90,3 +91,51 @@ def dispatch(message: dict, addr: str, peer_manager):
 		# Only show unfollow notification in non-verbose mode
 		if not peer_manager.logger.verbose:
 			print(f"User {from_user} has unfollowed you")
+
+	elif msg_type == "LIKE":
+		from_user = message.get("FROM")
+		to_user = message.get("TO")
+		post_timestamp = message.get("POST_TIMESTAMP")
+		action = message.get("ACTION")
+		timestamp = message.get("TIMESTAMP")
+		token = message.get("TOKEN")
+
+		# Validate required fields
+		if not (from_user and to_user and post_timestamp and action and timestamp and token):
+			peer_manager.logger.log_drop("Malformed LIKE message.")
+			return
+
+		# Check if this like is for our post
+		my_user_id = peer_manager.own_profile.get("USER_ID")
+		if to_user != my_user_id:
+			peer_manager.logger.log_drop(f"Ignored LIKE not for my post: {to_user}")
+			return
+
+		# Validate action
+		if action not in ["LIKE", "UNLIKE"]:
+			peer_manager.logger.log_drop(f"Invalid LIKE action: {action}")
+			return
+
+		# Add the like/unlike to the post
+		success = peer_manager.add_like_to_post(to_user, post_timestamp, from_user, action, timestamp, token)
+		if success:
+			peer_manager.logger.log("LIKE", f"Received {action.lower()} from {from_user} on post at timestamp {post_timestamp}")
+			
+			# Show notification in non-verbose mode
+			if not peer_manager.logger.verbose:
+				liker_name = peer_manager.get_display_name(from_user)
+				
+				# Find the post content for the notification
+				post_content = ""
+				if to_user in peer_manager.peers:
+					for post in peer_manager.peers[to_user].get('posts', []):
+						if str(post.get('timestamp')) == str(post_timestamp):
+							post_content = post.get('content', '')[:50]  # First 50 chars
+							if len(post.get('content', '')) > 50:
+								post_content += "..."
+							break
+				
+				if action == "LIKE":
+					print(f"\n{liker_name} likes your post: {post_content}")
+				else:
+					print(f"\n{liker_name} unliked your post: {post_content}")
