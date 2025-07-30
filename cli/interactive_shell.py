@@ -44,14 +44,16 @@ def run_shell(logger, peer_manager):
 					print("Post content cannot be empty.")
 					continue
 
-				ttl_input = input("TTL (in seconds, default 3600): ").strip()
-				try:
-					ttl = int(ttl_input) if ttl_input else 3600
-					if ttl <= 0:
-						raise ValueError
-				except ValueError:
-					print("Invalid TTL. Must be a positive integer.")
-					continue
+				# ttl_input = input("TTL (in seconds, default 3600): ").strip()
+				# try:
+				# 	ttl = int(ttl_input) if ttl_input else 3600
+				# 	if ttl <= 0:
+				# 		raise ValueError
+				# except ValueError:
+				# 	print("Invalid TTL. Must be a positive integer.")
+				# 	continue
+
+				ttl = 3600  # default TTL per RFC
 
 				import time, random
 				now = int(time.time())
@@ -73,7 +75,7 @@ def run_shell(logger, peer_manager):
 				follower_ips = peer_manager.get_follower_ips()
 				for user_id, ip in follower_ips:
 					send_message(post_message, (ip, config.PORT))
-					logger.log_send("POST", ip, post_message)
+				logger.log_send("POST", ip, post_message)
 
 			# 'dm' command to send a direct message to a peer
 			elif cmd == "dm":
