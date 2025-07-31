@@ -157,7 +157,7 @@ def run_shell(logger, peer_manager):
 					# Add to local following list
 					peer_manager.follow(target_user)
 					print(f"Follow request sent to {target_user}.")
-					logger.log_send("FOLLOW", ip, follow_message)
+					logger.log_send("FOLLOW", ip, follow_message, peer_manager)
 				except ValueError:
 					print("Invalid user format. Use user@ip.")
 
