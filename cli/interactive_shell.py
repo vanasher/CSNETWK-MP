@@ -74,7 +74,7 @@ def run_shell(logger, peer_manager):
 				follower_ips = peer_manager.get_follower_ips()
 				for ip in follower_ips:
 					send_message(post_message, (ip, config.PORT))
-				logger.log_send("POST", ip, post_message)
+				logger.log_send("POST", get_local_ip(), post_message)
 
 			# 'dm' command to send a direct message to a peer
 			elif cmd == "dm":
