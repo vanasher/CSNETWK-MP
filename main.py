@@ -12,6 +12,7 @@ if __name__ == "__main__":
 	verbose = True # default is verbose mode
 	logger = Logger(verbose)
 	peer_manager = PeerManager(logger)
+	peer_manager.start_ack_watcher()
 	udp = UDPHandler(logger, peer_manager, dispatch)
 	udp.start()
 

@@ -83,6 +83,10 @@ def run_shell(logger, peer_manager):
 					print("Recipient and content cannot be empty.")
 					continue
 
+				if "@" not in recipient or recipient.count("@") != 1:
+					print("Invalid recipient format. Use user@ip.")
+					continue
+				
 				import time, random
 				now = int(time.time())
 				ttl = 3600
@@ -105,8 +109,18 @@ def run_shell(logger, peer_manager):
 					_, ip = recipient.split("@")
 					send_message(dm_message, (ip, config.PORT))
 					logger.log_send("DM", ip, dm_message, peer_manager)
+
+					# track for retransmission if needed
+					peer_manager.pending_acks[message_id] = {
+						"message": dm_message,
+						"addr": (ip, config.PORT),
+						"timestamp": time.time(),
+						"attempts": 1
+					}
 				except ValueError:
 					print("Invalid recipient format. Use user@ip.")
+				except Exception as e:
+					print(f"Failed to send DM: {e}")
 
 			# 'follow' command to follow another user
 			elif cmd == "follow":
