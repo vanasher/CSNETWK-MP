@@ -3,6 +3,7 @@ from core.peer import PeerManager
 import json
 import config
 from parser.message_parser import craft_message
+from parser.message_parser import parse_message
 
 def run_shell(logger, peer_manager):
 	print("LSNP Interactive Shell. Type 'help' for commands.")
@@ -246,6 +247,103 @@ def run_shell(logger, peer_manager):
 				else:
 					print("Usage: verbose [on|off]")
 
+			# simulate sending a message
+			elif cmd == "simulate":
+				msg_type = input("Message type: ").strip()
+				if msg_type == "profile":
+					msg_type = "PROFILE"
+					username = input("Username: ").strip()
+					display_name = input("Display name: ").strip()
+					status = input("Status: ").strip()
+
+					user_id = f"{username}@{get_local_ip()}"
+					message = {
+						"TYPE": "PROFILE",
+						"USER_ID": user_id,
+						"DISPLAY_NAME": display_name,
+						"STATUS": status,
+						"AVATAR_TYPE": None,
+						"AVATAR_ENCODING": None,
+						"AVATAR_DATA": None,
+					}
+					print("\nCrafted Message:\n")
+					print(craft_message(message))
+					print("Parsed Message:\n")
+					print(parse_message(craft_message(message)))
+					print("\nSender:")
+					logger.log_send(msg_type, get_local_ip(), message, peer_manager)
+					print("\nReceiver:")
+					logger.log_recv(msg_type, get_local_ip(), message, peer_manager)
+
+				elif msg_type == "post":
+					msg_type = "POST"
+					content = input("Post content: ").strip()
+					if not content:
+						print("Post content cannot be empty.")
+						continue
+
+					ttl = 3600
+					import time, random
+					now = int(time.time())
+
+					user_id = "example@"+get_local_ip()
+					message_id = f"{random.getrandbits(64):016x}"
+					token = f"{user_id}|{now + ttl}|broadcast"
+
+					message = {
+						"TYPE": "POST",
+						"USER_ID": user_id,
+						"CONTENT": content,
+						"TTL": ttl,
+						"MESSAGE_ID": message_id,
+						"TOKEN": token
+					}
+
+					print("\nCrafted Message:\n")
+					print(craft_message(message))
+					print("Parsed Message:\n")
+					print(parse_message(craft_message(message)))
+					print("\nSender:")
+					logger.log_send(msg_type, get_local_ip(), message, peer_manager) # Note: this will cause errors in non-verbose mode since it does not store the peer
+					print("\nReceiver:")
+					logger.log_recv(msg_type, get_local_ip(), message, peer_manager)
+
+				elif msg_type == "dm":
+					msg_type = "DM"
+					recipient = input("Recipient (user_id@ip): ").strip()
+					content = input("Message: ").strip()
+					if not recipient or not content:
+						print("Recipient and content cannot be empty.")
+						continue
+
+					import time, random
+					now = int(time.time())
+					ttl = 3600
+					sender = "example@"+get_local_ip()
+					message_id = f"{random.getrandbits(64):016x}"
+					token = f"{sender}|{now + ttl}|chat"
+
+					message = {
+						"TYPE": "DM",
+						"FROM": sender,
+						"TO": recipient,
+						"CONTENT": content,
+						"TIMESTAMP": now,
+						"MESSAGE_ID": message_id,
+						"TOKEN": token
+					}
+
+					print("\nCrafted Message:\n")
+					print(craft_message(message))
+					print("Parsed Message:\n")
+					print(parse_message(craft_message(message)))
+					print("\nSender:")
+					logger.log_send(msg_type, get_local_ip(), message, peer_manager) # Note: this will cause errors in non-verbose mode since it does not store the peer
+					print("\nReceiver:")
+					logger.log_recv(msg_type, recipient.strip('@')[1], message, peer_manager)
+				else:
+					print("Unsupported message type for simulation.")
+			
 			elif cmd == "help":
 				print("Available commands:")
 				print("  profile    - Set your user profile")
