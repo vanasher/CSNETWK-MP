@@ -15,6 +15,7 @@ class PeerManager:
 		self.own_profile = None
 		self.following = set()
 		self.pending_acks = {}  # KEY: MESSAGE_ID, VALUE: {message, addr, timestamp, attempts}
+		self.followers = [] # composed of user_id of followers
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -76,40 +77,22 @@ class PeerManager:
 				self.peers[user_id]['followers'] = []
 
 	# add a new post to the peer's post list
-	def add_post(self, user_id, content, timestamp=None, ttl=None, message_id=None):
+	def add_post(self, user_id, content, timestamp=None, ttl=None, message_id=None, token=None):
 		if user_id in self.peers:
 			self.peers[user_id]['posts'].append({
 			'content': content,
 			'ttl': ttl,
-			'message_id': message_id
-			#token: token
+			'message_id': message_id,
+			'token': token
 		})
 
 	# add a new follower to a peer's followers list
 	def add_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
-		if to_user not in self.peers:
-			self.peers[to_user] = {
-				'display_name': to_user,
-				'status': '',
-				'posts': [],
-				'dms': [],
-				'followers': []
-			}
-
-		# initialize followers list if not present
-		if 'followers' not in self.peers[to_user]:
-			self.peers[to_user]['followers'] = []
-
-		# check if already followed by from_user
-		existing = next((f for f in self.peers[to_user]['followers'] if f['user'] == from_user), None)
-		if not existing:
-			self.peers[to_user]['followers'].append({
-				'user': from_user,
-				'token': token,
-				'timestamp': timestamp,
-				'message_id': message_id
-			})
-			self.logger.log("FOLLOW", f"User {from_user} has followed {to_user}")
+		follower_ips = self.get_follower_ips()
+		if from_user in self.peers:
+			ip = from_user.split('@')[1]  # Extract IP from user_id
+			if ip not in follower_ips:
+				self.followers.append(from_user)
 
 	# remove a follower from a peer's followers list
 	def remove_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
@@ -141,16 +124,10 @@ class PeerManager:
 	# return a list of (user_id, ip_address) of peers who follow the current user
 	def get_follower_ips(self):
 		followers = []
-		own_id = self.own_profile.get("USER_ID")
 		
-		for peer_id, peer_info in self.peers.items():
-			for follower in peer_info.get("followers", []):
-				if follower['user'] == own_id:
-					# this means peer_id is someone who follows me
-					ip = peer_id.split("@")[-1]
-					followers.append((peer_id, ip))
-					break
-
+		for user_id in self.followers:
+			ip = user_id.split('@')[1]  # Extract IP from user_id
+			followers.append(ip)
 		return followers
 	
 	def add_dm(self, from_user, content, timestamp, message_id, token):
@@ -186,9 +163,10 @@ class PeerManager:
 		following_status = "Following" if self.is_following(user_id) else "Not Following"
 		print(f"Following Status: {following_status}")
 		
+		#i don't think we need to show followers of the chosen peer (?)
 		# Show followers count
-		followers_count = len(peer_info.get('followers', []))
-		print(f"Followers: {followers_count}")
+		# followers_count = len(peer_info.get('followers', []))
+		# print(f"Followers: {followers_count}")
 		
 		# Show Posts
 		posts = peer_info.get('posts', [])

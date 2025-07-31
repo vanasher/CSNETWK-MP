@@ -85,7 +85,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		if from_user and to_user:
 			peer_manager.add_follower(to_user, from_user, token, timestamp, message_id)
-			peer_manager.logger.log("FOLLOW", f"{from_user} is now following {to_user}")
+			# peer_manager.logger.log("FOLLOW", f"{from_user} is now following {to_user}")
 
 	elif msg_type == "UNFOLLOW":
 		from_user = message.get("FROM")
@@ -97,5 +97,5 @@ def dispatch(message: dict, addr: str, peer_manager):
 		peer_manager.remove_follower(to_user, from_user, token, timestamp, message_id)
 
 		# Only show unfollow notification in non-verbose mode
-		if not peer_manager.logger.verbose:
-			print(f"User {from_user} has unfollowed you")
+		# if not peer_manager.logger.verbose:
+		# 	print(f"User {from_user} has unfollowed you")
