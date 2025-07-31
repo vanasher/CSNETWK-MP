@@ -72,7 +72,7 @@ def run_shell(logger, peer_manager):
 
 				# send only to followers
 				follower_ips = peer_manager.get_follower_ips()
-				for user_id, ip in follower_ips:
+				for ip in follower_ips:
 					send_message(post_message, (ip, config.PORT))
 				logger.log_send("POST", ip, post_message)
 
