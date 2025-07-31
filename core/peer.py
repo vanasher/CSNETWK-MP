@@ -1,6 +1,8 @@
 from utils.network_utils import get_local_ip
 from utils.network_utils import send_message
 import config
+import threading
+import time
 
 #  keeps track of all known peers and their data in a dictionary
 class PeerManager:
@@ -12,6 +14,7 @@ class PeerManager:
 						# user_id -> {display_name, status, posts: [], dms: []}
 		self.own_profile = None
 		self.following = set()
+		self.pending_acks = {}  # KEY: MESSAGE_ID, VALUE: {message, addr, timestamp, attempts}
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -225,3 +228,22 @@ class PeerManager:
 			print("  No direct messages from this peer.")
 		
 		print()  # Empty line for spacing
+
+	# start a background thread for watching ACKs
+	def start_ack_watcher(self):
+		def retransmit_loop():
+			while True:
+				now = time.time()
+				for message_id, entry in list(self.pending_acks.items()):
+					if now - entry["timestamp"] > 2: # timeout of 2 seconds
+						if entry["attempts"] < 3: # 3 attemps max
+							send_message(entry["message"], entry["addr"])
+							entry["timestamp"] = now
+							entry["attempts"] += 1
+							self.logger.log("RETRY", f"Retransmitted {message_id} (attempt {entry['attempts']})")
+						else:
+							self.logger.log("DROP", f"Gave up on {message_id} after 3 attempts")
+							del self.pending_acks[message_id]
+				time.sleep(0.5)
+
+		threading.Thread(target=retransmit_loop, daemon=True).start()
