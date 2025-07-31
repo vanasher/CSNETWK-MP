@@ -18,6 +18,7 @@ The following images are taken from AI generated code which were used as basis f
 **core/peer.py:**
 
 <img width="535" height="394" alt="image" src="https://github.com/user-attachments/assets/f1c7d8ad-acbc-4ceb-91ea-1af853602ee5" />
+<img width="758" height="455" alt="image" src="https://github.com/user-attachments/assets/f7d0e8c7-74e2-480d-8d0e-43f0ff2a8f92" />
 
 <br><br>
 **core/message_dispatcher.py:**
