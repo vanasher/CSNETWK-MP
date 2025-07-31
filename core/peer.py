@@ -163,9 +163,10 @@ class PeerManager:
 		following_status = "Following" if self.is_following(user_id) else "Not Following"
 		print(f"Following Status: {following_status}")
 		
+		#i don't think we need to show followers of the chosen peer (?)
 		# Show followers count
-		followers_count = len(peer_info.get('followers', []))
-		print(f"Followers: {followers_count}")
+		# followers_count = len(peer_info.get('followers', []))
+		# print(f"Followers: {followers_count}")
 		
 		# Show Posts
 		posts = peer_info.get('posts', [])
