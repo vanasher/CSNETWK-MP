@@ -32,8 +32,8 @@ class UDPHandler:
 		while self.running:
 			try:
 				data, addr = self.sock.recvfrom(65535) # 65535 -> maximum size of a UDP datagram
-				# if addr[0] == own_ip: # skip messages from self
-				# 	continue
+				if addr[0] == own_ip: # skip messages from self
+					continue
 				raw = data.decode("utf-8")
 				message = parse_message(raw)
 				self.logger.log_recv(message.get("TYPE", "UNKNOWN"), addr[0], message, self.peer_manager)

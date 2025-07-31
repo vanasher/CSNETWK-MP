@@ -74,7 +74,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		if message_id in peer_manager.pending_acks:
 			del peer_manager.pending_acks[message_id]
-			peer_manager.logger.log("ACK", f"ACK received for {message_id}: {status}")
+			#peer_manager.logger.log("ACK", f"ACK received for {message_id}: {status}")
 
 	elif msg_type == "FOLLOW":
 		message_id = message.get("MESSAGE_ID")

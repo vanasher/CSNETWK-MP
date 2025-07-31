@@ -235,14 +235,14 @@ class PeerManager:
 			while True:
 				now = time.time()
 				for message_id, entry in list(self.pending_acks.items()):
-					if now - entry["timestamp"] > 2:
-						if entry["attempts"] < 5:
+					if now - entry["timestamp"] > 2: # timeout of 2 seconds
+						if entry["attempts"] < 3: # 3 attemps max
 							send_message(entry["message"], entry["addr"])
 							entry["timestamp"] = now
 							entry["attempts"] += 1
 							self.logger.log("RETRY", f"Retransmitted {message_id} (attempt {entry['attempts']})")
 						else:
-							self.logger.log("DROP", f"Gave up on {message_id} after 5 attempts")
+							self.logger.log("DROP", f"Gave up on {message_id} after 3 attempts")
 							del self.pending_acks[message_id]
 				time.sleep(0.5)
 
