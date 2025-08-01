@@ -138,7 +138,7 @@ def run_shell(logger, peer_manager):
 				now = int(time.time())
 				sender = peer_manager.own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"
-				token = f"{sender}|{now + 3600}|social"
+				token = f"{sender}|{now + 3600}|follow"
 
 				follow_message = {
 					"TYPE": "FOLLOW",
