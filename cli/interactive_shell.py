@@ -156,7 +156,7 @@ def run_shell(logger, peer_manager):
 					
 					# Add to local following list
 					peer_manager.follow(target_user)
-					print(f"Follow request sent to {target_user}.")
+					# print(f"Follow request sent to {target_user}.")
 					logger.log_send("FOLLOW", ip, follow_message, peer_manager)
 				except ValueError:
 					print("Invalid user format. Use user@ip.")
@@ -180,7 +180,7 @@ def run_shell(logger, peer_manager):
 				now = int(time.time())
 				sender = peer_manager.own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"
-				token = f"{sender}|{now + 3600}|social"
+				token = f"{sender}|{now + 3600}|follow"
 
 				unfollow_message = {
 					"TYPE": "UNFOLLOW",
@@ -198,7 +198,7 @@ def run_shell(logger, peer_manager):
 					
 					# Remove from local following list
 					peer_manager.following.discard(target_user)
-					print(f"Unfollow request sent to {target_user}.")
+					# print(f"Unfollow request sent to {target_user}.")
 					logger.log_send("UNFOLLOW", ip, unfollow_message)
 				except ValueError:
 					print("Invalid user format. Use user@ip.")

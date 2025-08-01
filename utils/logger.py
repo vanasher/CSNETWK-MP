@@ -30,13 +30,27 @@ class Logger:
 		else:
 			if msg_type == "PROFILE":
 				print(f"\n\nBroadcasting profile...")
+
 			elif msg_type == "POST":
 				print(f"\n\nSuccessfully created post.")
+
 			elif msg_type == "DM":
 				to_user_id = msg.get("TO")
 				if peer_manager:
 					display_name = peer_manager.get_display_name(to_user_id)
 					print(f"\n\nSent message to {display_name}")
+
+			elif msg_type == "FOLLOW":
+				to_user_id = msg.get("TO")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(to_user_id)
+					print(f"\n\nYou are now following {display_name}")
+
+			elif msg_type == "UNFOLLOW":
+				to_user_id = msg.get("TO")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(to_user_id)
+					print(f"\n\nYou have unfollowed {display_name}")
 
 	def log_recv(self, msg_type, ip, msg=None, peer_manager=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
@@ -65,6 +79,18 @@ class Logger:
 				if peer_manager:
 					display_name = peer_manager.get_display_name(user_id)
 					print(f"\n\nFrom {display_name}: \n{msg.get('CONTENT', 'No content')}")
+			
+			if msg.get("TYPE") == "FOLLOW":
+				user_id = msg.get("FROM")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nUser {display_name} has followed you")
+			
+			if msg.get("TYPE") == "UNFOLLOW":
+				user_id = msg.get("FROM")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"\n\nUser {display_name} has unfollowed you")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

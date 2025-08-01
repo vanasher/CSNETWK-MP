@@ -93,20 +93,15 @@ class PeerManager:
 
 	# remove a follower from a peer's followers list
 	def remove_follower(self, to_user, from_user, token=None, timestamp=None, message_id=None):
-		if to_user in self.peers and 'followers' in self.peers[to_user]:
-			original_len = len(self.peers[to_user]['followers'])
-			self.peers[to_user]['followers'] = [
-				f for f in self.peers[to_user]['followers'] if f['user'] != from_user
-			]
-			if len(self.peers[to_user]['followers']) < original_len:
-				self.logger.log("UNFOLLOW", f"User {from_user} has unfollowed {to_user}")
+		if from_user in self.peers and from_user in self.followers:
+			self.followers.remove(from_user)
 		else:
-			self.logger.log("UNFOLLOW", f"Peer {to_user} not found or has no followers")
+			print(f"Peer {from_user} not found or invalid message.")
 	
 	# func for following a user
 	def follow(self, user_id):
 		self.following.add(user_id)
-		self.logger.log("FOLLOW", f"You are now following {user_id}")
+		# self.logger.log("FOLLOW", f"You are now following {user_id}")
 	
 	# func for checking if following a user
 	def is_following(self, user_id):
