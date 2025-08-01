@@ -8,12 +8,13 @@ from parser.message_parser import craft_message
 def broadcast_profile_periodically(logger, peer_manager, interval=10): # set the interval to 20 seconds for testing
     def broadcast_loop():
         while True:
-            profile = peer_manager.get_own_profile()
-            user_id = profile.get("USER_ID")
-            ping = {
-            	"TYPE": "PING",
-                "USER_ID": user_id
-			}
+            if profile and profile.get("USER_ID"):
+                profile = peer_manager.get_own_profile()
+                user_id = profile.get("USER_ID")
+                ping = {
+                    "TYPE": "PING",
+                    "USER_ID": user_id
+                }
             # Only broadcast if the profile is complete (has USER_ID)
             if profile and profile.get("USER_ID"):
                 send_message(ping, (config.BROADCAST_ADDR, config.PORT))
