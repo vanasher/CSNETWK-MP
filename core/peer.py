@@ -38,13 +38,10 @@ class PeerManager:
 
 		self.logger.log("PEER", f"Own profile {'created' if is_first_time else 'updated'} with USER_ID {user_id}.")
 
-		# initial broadcast (broadcast a profile immediately after setting it)
-		# added this so peers would immediately add the new user to known peers
-		# after initial broadcast, the message will be broadcast periodically
-		if is_first_time:
-			profile = self.get_own_profile()
-			self.logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
-			send_message(profile, (config.BROADCAST_ADDR, config.PORT))
+		# broadcast profile everytime peer sets profile
+		profile = self.get_own_profile()
+		self.logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
+		send_message(profile, (config.BROADCAST_ADDR, config.PORT))
 
 	# for broadcasting own profile periodically
 	def get_own_profile(self):
@@ -121,7 +118,7 @@ class PeerManager:
 		peer = self.peers.get(user_id)
 		return peer.get("display_name", user_id) if peer else user_id
 
-	# return a list of (user_id, ip_address) of peers who follow the current user
+	# return a list of ip address of peers who follow the current user
 	def get_follower_ips(self):
 		followers = []
 		
@@ -130,6 +127,13 @@ class PeerManager:
 			followers.append(ip)
 		return followers
 	
+	def get_known_peer_ips(self):
+		known_peers = []
+		for peer in self.peers:
+			ip = peer.get["USER_ID"].split('@')[1]
+			known_peers.append(ip)
+		return known_peers
+
 	def add_dm(self, from_user, content, timestamp, message_id, token):
 		if from_user not in self.peers:
 			self.peers[from_user] = {}

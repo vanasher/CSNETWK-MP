@@ -11,10 +11,15 @@ def broadcast_profile_periodically(logger, peer_manager, interval=300): # set th
             profile = peer_manager.get_own_profile()
             # Only broadcast if the profile is complete (has USER_ID)
             if profile and profile.get("USER_ID"):
-                send_message(profile, (config.BROADCAST_ADDR, config.PORT))
+                user_id = profile.get("USER_ID")
+                ping = {
+                    "TYPE": "PING",
+                    "USER_ID": user_id
+                }
+                send_message(ping, (config.BROADCAST_ADDR, config.PORT))
                 
                 #lsnp_text = craft_message(profile)
-                logger.log_send("PROFILE", f"{config.BROADCAST_ADDR}:{config.PORT}", profile)
+                logger.log_send("PING", f"{config.BROADCAST_ADDR}:{config.PORT}", ping)
             # else:
             #     logger.log("PROFILE", "Own profile not set; skipping broadcast.")
             time.sleep(interval)
