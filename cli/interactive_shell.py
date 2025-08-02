@@ -4,6 +4,7 @@ import json
 import config
 from parser.message_parser import craft_message
 from parser.message_parser import parse_message
+from utils.network_utils import validate_token
 
 def run_shell(logger, peer_manager):
 	print("LSNP Interactive Shell. Type 'help' for commands.")
@@ -13,6 +14,14 @@ def run_shell(logger, peer_manager):
 			cmd = input(">>> ").strip()
 
 			if cmd == "exit":
+				for token in peer_manager.issued_tokens:
+					revoke_msg = {
+						"TYPE": "REVOKE",
+						"TOKEN": token
+					}
+					send_message(revoke_msg, (config.BROADCAST_ADDR, config.PORT))
+					logger.log_send("REVOKE", get_local_ip(), revoke_msg)
+
 				print("Exiting...")
 				break
 			
@@ -52,7 +61,7 @@ def run_shell(logger, peer_manager):
 				# 	print("Invalid TTL. Must be a positive integer.")
 				# 	continue
 
-				ttl = 3600  # default TTL per RFC
+				ttl = config.TTL  # default TTL per RFC
 
 				import time, random
 				now = int(time.time())
@@ -70,10 +79,17 @@ def run_shell(logger, peer_manager):
 					"TOKEN": token
 				}
 
+				# check if token is valid
+				is_valid, error = validate_token(message["TOKEN"], "broadcast", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"POST rejected: {error}")
+					return
+				
 				# send only to followers
 				follower_ips = peer_manager.get_follower_ips()
 				for ip in follower_ips:
 					send_message(post_message, (ip, config.PORT))
+				peer_manager.issued_tokens.append(token)
 				logger.log_send("POST", get_local_ip(), post_message)
 
 			# 'dm' command to send a direct message to a peer
@@ -90,7 +106,7 @@ def run_shell(logger, peer_manager):
 				
 				import time, random
 				now = int(time.time())
-				ttl = 3600
+				ttl = config.TTL
 				sender = peer_manager.own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"
 				token = f"{sender}|{now + ttl}|chat"
@@ -105,10 +121,17 @@ def run_shell(logger, peer_manager):
 					"TOKEN": token
 				}
 
+				# check if token is valid
+				is_valid, error = validate_token(message["TOKEN"], "chat", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"DM rejected: {error}")
+					return
+				
 				# Extract IP from recipient (format: user@ip)
 				try:
 					_, ip = recipient.split("@")
 					send_message(dm_message, (ip, config.PORT))
+					peer_manager.issued_tokens.append(token)
 					logger.log_send("DM", ip, dm_message, peer_manager)
 
 					# track for retransmission if needed
@@ -138,7 +161,7 @@ def run_shell(logger, peer_manager):
 				now = int(time.time())
 				sender = peer_manager.own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"
-				token = f"{sender}|{now + 3600}|follow"
+				token = f"{sender}|{now + config.TTL}|follow"
 
 				follow_message = {
 					"TYPE": "FOLLOW",
@@ -148,12 +171,19 @@ def run_shell(logger, peer_manager):
 					"TIMESTAMP": now,
 					"TOKEN": token
 				}
-
+				
+				# check if token is valid
+				is_valid, error = validate_token(message["TOKEN"], "follow", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"FOLLOW rejected: {error}")
+					return
+				
 				# Extract IP from target user (format: user@ip)
 				try:
 					_, ip = target_user.split("@")
 					send_message(follow_message, (ip, config.PORT))
 					
+					peer_manager.issued_tokens.append(token)
 					# Add to local following list
 					peer_manager.follow(target_user)
 					# print(f"Follow request sent to {target_user}.")
@@ -180,7 +210,7 @@ def run_shell(logger, peer_manager):
 				now = int(time.time())
 				sender = peer_manager.own_profile["USER_ID"]
 				message_id = f"{random.getrandbits(64):016x}"
-				token = f"{sender}|{now + 3600}|follow"
+				token = f"{sender}|{now + config.TTL}|follow"
 
 				unfollow_message = {
 					"TYPE": "UNFOLLOW",
@@ -191,11 +221,18 @@ def run_shell(logger, peer_manager):
 					"TOKEN": token
 				}
 
+				# check if token is valid
+				is_valid, error = validate_token(message["TOKEN"], "follow", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"UNFOLLOW rejected: {error}")
+					return
+				
 				# Extract IP from target user (format: user@ip)
 				try:
 					_, ip = target_user.split("@")
 					send_message(unfollow_message, (ip, config.PORT))
 					
+					peer_manager.issued_tokens.append(token)
 					# Remove from local following list
 					peer_manager.following.discard(target_user)
 					# print(f"Unfollow request sent to {target_user}.")
@@ -358,6 +395,13 @@ def run_shell(logger, peer_manager):
 				else:
 					print("Unsupported message type for simulation.")
 			
+			elif cmd == "ttl":
+				user_input = input("Set TTL: ").strip()
+				if user_input.isdigit() and int(user_input) > 0:
+					config.TTL = int(user_input)
+				else:
+					print("TTL must be a positive integer")
+			
 			elif cmd == "help":
 				print("Available commands:")
 				print("  profile    - Set your user profile")
@@ -368,6 +412,7 @@ def run_shell(logger, peer_manager):
 				print("  list       - Show known peers and following status")
 				print("  show       - Show detailed peer information with posts and DMs")
 				print("  verbose [on|off] - Toggle verbose logging")
+				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
 
 			else:
