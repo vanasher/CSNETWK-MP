@@ -80,7 +80,7 @@ def run_shell(logger, peer_manager):
 				}
 
 				# check if token is valid
-				is_valid, error = validate_token(message["TOKEN"], "broadcast", peer_manager.revoked_tokens)
+				is_valid, error = validate_token(post_message["TOKEN"], "broadcast", peer_manager.revoked_tokens)
 				if not is_valid:
 					logger.log("REJECT", f"POST rejected: {error}")
 					return
@@ -122,7 +122,7 @@ def run_shell(logger, peer_manager):
 				}
 
 				# check if token is valid
-				is_valid, error = validate_token(message["TOKEN"], "chat", peer_manager.revoked_tokens)
+				is_valid, error = validate_token(dm_message["TOKEN"], "chat", peer_manager.revoked_tokens)
 				if not is_valid:
 					logger.log("REJECT", f"DM rejected: {error}")
 					return
@@ -173,7 +173,7 @@ def run_shell(logger, peer_manager):
 				}
 				
 				# check if token is valid
-				is_valid, error = validate_token(message["TOKEN"], "follow", peer_manager.revoked_tokens)
+				is_valid, error = validate_token(follow_message["TOKEN"], "follow", peer_manager.revoked_tokens)
 				if not is_valid:
 					logger.log("REJECT", f"FOLLOW rejected: {error}")
 					return
@@ -222,7 +222,7 @@ def run_shell(logger, peer_manager):
 				}
 
 				# check if token is valid
-				is_valid, error = validate_token(message["TOKEN"], "follow", peer_manager.revoked_tokens)
+				is_valid, error = validate_token(unfollow_message["TOKEN"], "follow", peer_manager.revoked_tokens)
 				if not is_valid:
 					logger.log("REJECT", f"UNFOLLOW rejected: {error}")
 					return
@@ -399,6 +399,7 @@ def run_shell(logger, peer_manager):
 				user_input = input("Set TTL: ").strip()
 				if user_input.isdigit() and int(user_input) > 0:
 					config.TTL = int(user_input)
+					print(f"TTL set to {config.TTL}")
 				else:
 					print("TTL must be a positive integer")
 			
