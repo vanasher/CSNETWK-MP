@@ -3,6 +3,7 @@ from utils.network_utils import send_message
 import config
 import threading
 import time
+from utils.network_utils import validate_token
 
 #  keeps track of all known peers and their data in a dictionary
 class PeerManager:
@@ -16,6 +17,8 @@ class PeerManager:
 		self.following = set()
 		self.pending_acks = {}  # KEY: MESSAGE_ID, VALUE: {message, addr, timestamp, attempts}
 		self.followers = [] # composed of user_id of followers
+		self.revoked_tokens = set()
+		self.issued_tokens = [] # token is added everytime the user sends a message with a token
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -171,12 +174,22 @@ class PeerManager:
 		posts = peer_info.get('posts', [])
 		print(f"\nPosts ({len(posts)}):")
 		if posts:
-			for i, post in enumerate(posts, 1):
-				content = post.get('content', 'No content')
-				message_id = post.get('message_id', 'N/A')
-				ttl = post.get('ttl', 'N/A')
-				print(f"  {i}. {content}")
-				print(f"     ID: {message_id} | TTL: {ttl}")
+			# checks if a valid post exists
+			valid_exists = False
+			for i, post in enumerate([posts], 1):
+				is_valid, error = validate_token(post.get("token"), "broadcast", self.revoked_tokens)
+				if is_valid:
+					valid_exists = True
+					break
+			if valid_exists:
+				for i, post in enumerate(posts, 1):
+					content = post.get('content', 'No content')
+					message_id = post.get('message_id', 'N/A')
+					ttl = post.get('ttl', 'N/A')
+					print(f"  {i}. {content}")
+					print(f"     ID: {message_id} | TTL: {ttl}")
+			else:
+				print("  No posts from this peer.")
 		else:
 			print("  No posts from this peer.")
 		
@@ -184,23 +197,35 @@ class PeerManager:
 		dms = peer_info.get('dms', [])
 		print(f"\nDirect Messages ({len(dms)}):")
 		if dms:
+			# checks if a valid dm exists
+			valid_exists = False
 			for i, dm in enumerate(dms, 1):
-				content = dm.get('content', 'No content')
-				timestamp = dm.get('timestamp', 'N/A')
-				message_id = dm.get('message_id', 'N/A')
-				
-				# Convert timestamp to readable format if it's a number
-				try:
-					if isinstance(timestamp, (int, float)) or (isinstance(timestamp, str) and timestamp.isdigit()):
-						import datetime
-						readable_time = datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-					else:
-						readable_time = str(timestamp)
-				except:
-					readable_time = str(timestamp)
-				
-				print(f"  {i}. {content}")
-				print(f"     ID: {message_id} | Time: {readable_time}")
+				is_valid, error = validate_token(dm.get("token"), "chat", self.revoked_tokens)
+				if is_valid:
+					valid_exists = True
+					break
+			if valid_exists:
+				for i, dm in enumerate(dms, 1):
+					is_valid, error = validate_token(dm.get("token"), "chat", self.revoked_tokens)
+					if is_valid:
+						content = dm.get('content', 'No content')
+						timestamp = dm.get('timestamp', 'N/A')
+						message_id = dm.get('message_id', 'N/A')
+						
+						# Convert timestamp to readable format if it's a number
+						try:
+							if isinstance(timestamp, (int, float)) or (isinstance(timestamp, str) and timestamp.isdigit()):
+								import datetime
+								readable_time = datetime.datetime.fromtimestamp(int(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+							else:
+								readable_time = str(timestamp)
+						except:
+							readable_time = str(timestamp)
+						
+						print(f"  {i}. {content}")
+						print(f"     ID: {message_id} | Time: {readable_time}")
+			else:
+				print("  No direct messages from this peer.")
 		else:
 			print("  No direct messages from this peer.")
 		

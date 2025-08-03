@@ -3,6 +3,7 @@ from parser.message_parser import craft_message
 import ipaddress
 import psutil
 import struct
+import time
 
 def send_message(msg_dict, addr, udp_socket=None):
 	if udp_socket is None:
@@ -94,3 +95,20 @@ def get_broadcast_address():
 					return str(interface.network.broadcast_address)
 	return '255.255.255.255'
 '''
+
+# func for validating token
+def validate_token(token, required_scope, revoked_tokens):
+    try:
+        user_id, expiry, scope = token.split("|")
+        expiry = int(expiry)
+
+        if time.time() > expiry:
+            return False, "Expired token"
+        if scope != required_scope:
+            return False, f"Scope mismatch: expected '{required_scope}', got '{scope}'"
+        if token in revoked_tokens:
+            return False, "Token has been revoked"
+
+        return True, None
+    except Exception as e:
+        return False, f"Invalid token format: {e}"

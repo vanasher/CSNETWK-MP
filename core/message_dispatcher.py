@@ -99,3 +99,10 @@ def dispatch(message: dict, addr: str, peer_manager):
 		# Only show unfollow notification in non-verbose mode
 		# if not peer_manager.logger.verbose:
 		# 	print(f"User {from_user} has unfollowed you")
+
+	elif message.get("TYPE") == "REVOKE":
+		token = message.get("TOKEN")
+		if token:
+			peer_manager.revoked_tokens.add(token)
+			peer_manager.logger.log("REVOKE", f"Token revoked: {token}")
+		return
