@@ -1,5 +1,9 @@
 from utils.network_utils import send_message
 import config
+from utils.network_utils import validate_token
+from utils.game_utils import print_board
+from utils.game_utils import check_game_result
+from utils.game_utils import send_result_message
 
 # Routes incoming LSNP messages to appropriate PeerManager handlers based on the message type
 def dispatch(message: dict, addr: str, peer_manager):
@@ -100,9 +104,78 @@ def dispatch(message: dict, addr: str, peer_manager):
 		# if not peer_manager.logger.verbose:
 		# 	print(f"User {from_user} has unfollowed you")
 
-	elif message.get("TYPE") == "REVOKE":
+	elif msg_type == "REVOKE":
 		token = message.get("TOKEN")
 		if token:
 			peer_manager.revoked_tokens.add(token)
 			peer_manager.logger.log("REVOKE", f"Token revoked: {token}")
 		return
+	
+	elif msg_type == "TICTACTOE_INVITE":
+		token = message.get("TOKEN")
+		valid, reason = validate_token(token, "game", peer_manager.revoked_tokens)
+		if not valid:
+			peer_manager.logger.log_drop("TICTACTOE_INVITE", addr, reason)
+			return
+
+		game_id = message.get("GAMEID")
+		from_user = message.get("FROM")
+		if game_id in peer_manager.games:
+			peer_manager.logger.log_info(f"Duplicate game invite for GAMEID {game_id} ignored.")
+			return
+
+		peer_manager.create_game(game_id, from_user, is_initiator=False, token=token)
+		# peer_manager.logger.log("TICTACTOE_INVITE", addr, message)
+		print(f"New Tic Tac Toe game started with {from_user}.")
+		print_board(peer_manager.games[game_id]["board"])
+
+	elif msg_type == "TICTACTOE_MOVE":
+		game_id = message.get("GAMEID")
+		turn = int(message.get("TURN"))
+		pos = int(message.get("POSITION"))
+		symbol = message.get("SYMBOL")
+		from_user = message.get("FROM")
+
+		game = peer_manager.games.get(game_id)
+		if not game:
+			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, f"Unknown GAMEID {game_id}")
+			return
+
+		if turn != game["turn"]:
+			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, f"Unexpected TURN: got {turn}, expected {game['turn']}")
+			return
+
+		if game["board"][pos] != " ":
+			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Invalid move: position already taken")
+			return
+
+		success = peer_manager.apply_move(game_id, pos, symbol)
+		if success:
+			# peer_manager.logger.log("TICTACTOE_MOVE", addr, message)
+			print_board(game["board"])
+			
+			# check win/draw?
+			result = check_game_result(game["board"])
+			if result:
+				send_result_message(game_id, result, from_user, peer_manager.get_own_profile().get("USER_ID"))
+		else:
+			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Failed to apply move")
+
+	elif msg_type == "TICTACTOE_RESULT":
+		game_id = message.get("GAMEID")
+		result = message.get("RESULT")
+		winner = message.get("WINNER")
+
+		game = peer_manager.games.pop(game_id, None)
+		if not game:
+			peer_manager.logger.log_drop("TICTACTOE_RESULT", addr, f"No active game with GAMEID {game_id}")
+			return
+
+		# peer_manager.logger.log("TICTACTOE_RESULT", addr, message)
+
+		if result == "DRAW":
+			print(f"Game {game_id} ended in a draw.")
+		elif winner == peer_manager.get_own_profile().get("USER_ID"):
+			print(f"You won the game {game_id}!")
+		else:
+			print(f"You lost game {game_id}. Winner: {winner}")

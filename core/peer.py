@@ -19,6 +19,7 @@ class PeerManager:
 		self.followers = [] # composed of user_id of followers
 		self.revoked_tokens = set()
 		self.issued_tokens = [] # token is added everytime the user sends a message with a token
+		self.games = {}  # key = GAMEID, value = game info dict
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -249,3 +250,31 @@ class PeerManager:
 				time.sleep(0.5)
 
 		threading.Thread(target=retransmit_loop, daemon=True).start()
+
+	# create a new game when sending or receiving a game invite
+	def create_game(self, game_id, opponent_id, is_initiator, token):
+		symbol = "X" if is_initiator else "O"
+		opponent_symbol = "O" if is_initiator else "X"
+		
+		self.games[game_id] = {
+			"board": [" "] * 9,
+			"turn": 1,
+			"symbol": symbol,
+			"opponent_symbol": opponent_symbol,
+			"opponent_id": opponent_id,
+			"my_turn": is_initiator,
+			"last_message_id": None,
+			"token": token
+		}
+	
+	def apply_move(self, game_id, position, symbol):
+		game = self.games.get(game_id)
+		if not game:
+			return False
+
+		if position < 0 or position >= 9 or game["board"][position] != " ":
+			return False
+
+		game["board"][position] = symbol
+		game["turn"] += 1
+		return True
