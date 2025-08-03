@@ -52,6 +52,23 @@ class Logger:
 					display_name = peer_manager.get_display_name(to_user_id)
 					print(f"\n\nYou have unfollowed {display_name}")
 
+			# ===== GROUP MESSAGE SENDING =====
+			elif msg_type == "GROUP_CREATE":
+				group_name = msg.get("GROUP_NAME", "Unknown Group")
+				print(f"\n\nGroup '{group_name}' created successfully.")
+
+			elif msg_type == "GROUP_UPDATE":
+				group_id = msg.get("GROUP_ID")
+				if peer_manager and group_id in peer_manager.groups:
+					group_name = peer_manager.groups[group_id]["group_name"]
+					print(f"\n\nGroup '{group_name}' updated successfully.")
+
+			elif msg_type == "GROUP_MESSAGE":
+				group_id = msg.get("GROUP_ID")
+				if peer_manager and group_id in peer_manager.groups:
+					group_name = peer_manager.groups[group_id]["group_name"]
+					print(f"\n\nMessage sent to group '{group_name}'.")
+
 	def log_recv(self, msg_type, ip, msg=None, peer_manager=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
 		if self.verbose:
@@ -91,6 +108,23 @@ class Logger:
 				if peer_manager:
 					display_name = peer_manager.get_display_name(user_id)
 					print(f"\n\nUser {display_name} has unfollowed you")
+
+			# ===== GROUP MESSAGE RECEIVING =====
+			if msg.get("TYPE") == "GROUP_CREATE":
+				group_name = msg.get("GROUP_NAME", "Unknown Group")
+				print(f"\n\nYou've been added to {group_name}")
+
+			if msg.get("TYPE") == "GROUP_UPDATE":
+				group_id = msg.get("GROUP_ID")
+				if peer_manager and group_id in peer_manager.groups:
+					group_name = peer_manager.groups[group_id]["group_name"]
+					print(f"\n\nThe group \"{group_name}\" member list was updated.")
+
+			if msg.get("TYPE") == "GROUP_MESSAGE":
+				sender = msg.get("FROM")
+				content = msg.get("CONTENT", "")
+				if sender:
+					print(f"\n\n{sender} sent \"{content}\"")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"
