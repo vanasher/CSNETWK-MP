@@ -428,7 +428,7 @@ def run_shell(logger, peer_manager):
 				ttl = config.TTL
 				sender = peer_manager.own_profile["USER_ID"]
 				token = f"{sender}|{now + ttl}|game"
-				game_id = str(uuid.uuid4())[:8]
+				game_id = f"g{random.randint(0, 255)}"
 				message_id = f"{random.getrandbits(64):016x}"
 				symbol = "X"
 

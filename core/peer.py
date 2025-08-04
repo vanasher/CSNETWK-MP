@@ -283,5 +283,5 @@ class PeerManager:
 
 		game["board"][position] = symbol
 		game["turn"] += 1
-		game["my_turn"] = is_self  # It will be their turn if is_self is False
+		game["my_turn"] = not is_self  # It will be their turn if is_self is False
 		return True
