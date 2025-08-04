@@ -61,4 +61,4 @@ def send_result_message(peer_manager, game_id, result, opponent_id, winner_id=No
     opponent_ip = opponent_id.split('@')[1]
     if opponent_ip:
         send_message(msg, (opponent_ip, config.PORT))
-        peer_manager.logger.log_send("TICTACTOE_RESULT", opponent_id, )
+        peer_manager.logger.log_send("TICTACTOE_RESULT", opponent_id, msg)
