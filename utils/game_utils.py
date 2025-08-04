@@ -34,6 +34,8 @@ def get_winning_line(board, symbol):
     return None
 
 def send_result_message(game_id, result, opponent_id, winner_id=None, winning_symbol=None, winning_line=None):
+    
+    import time
     now = int(time.time())
     
     msg = {

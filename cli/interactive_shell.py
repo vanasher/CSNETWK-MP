@@ -5,11 +5,8 @@ import config
 from parser.message_parser import craft_message
 from parser.message_parser import parse_message
 from utils.network_utils import validate_token
-from utils.game_utils import check_game_result
-from utils.game_utils import send_result_message
 from utils.game_utils import print_board
 import uuid
-import time
 
 def run_shell(logger, peer_manager):
 	print("LSNP Interactive Shell. Type 'help' for commands.")
@@ -425,6 +422,8 @@ def run_shell(logger, peer_manager):
 			
 			elif cmd == "tictactoe invite":
 				recipient = input("User ID (e.g. user@ip): ").strip()
+
+				import time, random
 				now = int(time.time())
 				ttl = config.TTL
 				sender = peer_manager.own_profile["USER_ID"]
@@ -470,7 +469,8 @@ def run_shell(logger, peer_manager):
 				except:
 					print("Invalid position. Must be an integer from 0 to 8.")
 					continue
-
+				
+				import time, random
 				now = int(time.time())
 				ttl = config.TTL
 				sender = peer_manager.own_profile["USER_ID"]
