@@ -56,6 +56,7 @@ The following images are taken from AI generated code which were used as basis f
 **utils/game_utils.py**
 
 <img width="673" height="377" alt="image" src="https://github.com/user-attachments/assets/1fcfa68b-bbd4-492d-863f-701b52c1670b" />
+<img width="1576" height="738" alt="image" src="https://github.com/user-attachments/assets/4093f242-5eab-4389-aef6-8983415298c5" />
 
 <br><br>
 **DISTRIBUTION OF TASKS**
