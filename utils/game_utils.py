@@ -33,16 +33,17 @@ def get_winning_line(board, symbol):
             return line
     return None
 
-def send_result_message(peer_manager, game_id, result, opponent_id, winner_id=None, winning_symbol=None, winning_line=None):
+def send_result_message(peer_manager, token, game_id, result, opponent_id, winner_id=None, winning_symbol=None, winning_line=None):
     
     import time
     now = int(time.time())
-    
+
     msg = {
         "TYPE": "TICTACTOE_RESULT",
         "GAMEID": game_id,
         "RESULT": result,  # e.g. "WIN" or "DRAW"
-        "TIMESTAMP": now
+        "TIMESTAMP": now,
+        "TOKEN" : token
     }
 
     # Include winner details only if it's a win
@@ -54,7 +55,7 @@ def send_result_message(peer_manager, game_id, result, opponent_id, winner_id=No
         msg["WINNING_LINE"] = ",".join(str(i) for i in winning_line) if winning_line else ""
     else:
         # For draw: no winner, but still notify opponent
-        msg["FROM"] = winner_id if winner_id else "system"
+        msg["FROM"] = winner_id if winner_id else peer_manager.get_own_profile().get("USER_ID")
         msg["TO"] = opponent_id
 
     # Extract IP and send

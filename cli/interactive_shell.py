@@ -520,9 +520,14 @@ def run_shell(logger, peer_manager):
 
 				result, winning_line = check_game_result(game["board"])
 				if result:
+					import time, random
+					now = int(time.time())
+					ttl = config.TTL
+					token = f"{sender}|{now + ttl}|game"
 					my_user_id = peer_manager.own_profile["USER_ID"]
 					send_result_message(
 						peer_manager,
+						token,
 						game_id,
 						result,
 						game["opponent_id"],
