@@ -127,6 +127,15 @@ def dispatch(message: dict, addr: str, peer_manager):
 		sender_symbol = message.get("SYMBOL", "X")  # Default to X if missing
 		my_symbol = "O" if sender_symbol == "X" else "X"
 
+		message_id = message.get("MESSAGE_ID")
+		if message_id:
+			ack_msg = {
+				"TYPE": "ACK",
+				"MESSAGE_ID": message_id,
+				"STATUS": "RECEIVED"
+			}
+			send_message(ack_msg, (addr, config.PORT))
+
 		peer_manager.create_game(game_id, from_user, is_initiator=False, token=token, my_symbol=my_symbol, opponent_symbol=sender_symbol)
 		# peer_manager.logger.log("TICTACTOE_INVITE", addr, message)
 		print(f"New Tic Tac Toe game started with {from_user}.")
@@ -138,6 +147,15 @@ def dispatch(message: dict, addr: str, peer_manager):
 		pos = int(message.get("POSITION"))
 		symbol = message.get("SYMBOL")
 		from_user = message.get("FROM")
+
+		message_id = message.get("MESSAGE_ID")
+		if message_id:
+			ack_msg = {
+				"TYPE": "ACK",
+				"MESSAGE_ID": message_id,
+				"STATUS": "RECEIVED"
+			}
+			send_message(ack_msg, (addr, config.PORT))
 
 		game = peer_manager.games.get(game_id)
 		if not game:

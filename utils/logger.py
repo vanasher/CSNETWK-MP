@@ -92,6 +92,12 @@ class Logger:
 					display_name = peer_manager.get_display_name(user_id)
 					print(f"\n\nUser {display_name} has unfollowed you")
 
+			if msg.get("TYPE") == "TICTACTOE_INVITE":
+				user_id = msg.get("FROM")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					print(f"{display_name} is inviting you to play tic-tac-toe")
+
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"
 		self.log("TOKEN", status)
