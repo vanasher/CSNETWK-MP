@@ -1,6 +1,7 @@
 from utils.network_utils import send_message
 import config
 import time
+import random
 
 # func for displaying tic tac toe board
 def print_board(board):
@@ -37,26 +38,24 @@ def send_result_message(peer_manager, token, game_id, result, opponent_id, winne
     
     import time
     now = int(time.time())
+    message_id = f"{random.getrandbits(64):016x}"
+
+    from_id = winner_id if winner_id else peer_manager.get_own_profile().get("USER_ID")
 
     msg = {
         "TYPE": "TICTACTOE_RESULT",
+        "FROM": from_id,
+        "TO": opponent_id,
         "GAMEID": game_id,
-        "RESULT": result,  # e.g. "WIN" or "DRAW"
-        "TIMESTAMP": now,
-        "TOKEN" : token
+        "MESSAGE_ID": message_id,
+        "RESULT": result,
+        "SYMBOL": winning_symbol if result == "WIN" else None,
+        "WINNING_LINE": ",".join(str(i) for i in winning_line) if result == "WIN" and winning_line else None,
+        "TIMESTAMP": now
     }
 
-    # Include winner details only if it's a win
-    if result == "WIN" and winner_id:
-        msg["FROM"] = winner_id  # sender is the winner
-        msg["TO"] = opponent_id
-        msg["WINNER"] = winner_id
-        msg["SYMBOL"] = winning_symbol  # "X" or "O"
-        msg["WINNING_LINE"] = ",".join(str(i) for i in winning_line) if winning_line else ""
-    else:
-        # For draw: no winner, but still notify opponent
-        msg["FROM"] = winner_id if winner_id else peer_manager.get_own_profile().get("USER_ID")
-        msg["TO"] = opponent_id
+    # Remove keys with value None to keep message clean
+    msg = {k: v for k, v in msg.items() if v is not None}
 
     # Extract IP and send
     opponent_ip = opponent_id.split('@')[1]
