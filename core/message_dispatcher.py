@@ -123,8 +123,11 @@ def dispatch(message: dict, addr: str, peer_manager):
 		if game_id in peer_manager.games:
 			peer_manager.logger.log_info(f"Duplicate game invite for GAMEID {game_id} ignored.")
 			return
+		
+		sender_symbol = message.get("SYMBOL", "X")  # Default to X if missing
+		my_symbol = "O" if sender_symbol == "X" else "X"
 
-		peer_manager.create_game(game_id, from_user, is_initiator=False, token=token)
+		peer_manager.create_game(game_id, from_user, is_initiator=False, token=token, my_symbol=my_symbol, opponent_symbol=sender_symbol)
 		# peer_manager.logger.log("TICTACTOE_INVITE", addr, message)
 		print(f"New Tic Tac Toe game started with {from_user}.")
 		print_board(peer_manager.games[game_id]["board"])
@@ -145,19 +148,23 @@ def dispatch(message: dict, addr: str, peer_manager):
 			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, f"Unexpected TURN: got {turn}, expected {game['turn']}")
 			return
 
+		if pos < 0 or pos > 8:
+			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Invalid position: out of range")
+			return
+		
 		if game["board"][pos] != " ":
 			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Invalid move: position already taken")
 			return
 
-		success = peer_manager.apply_move(game_id, pos, symbol)
+		success = peer_manager.apply_move(game_id, pos, is_self=False, symbol=symbol)
 		if success:
 			# peer_manager.logger.log("TICTACTOE_MOVE", addr, message)
 			print_board(game["board"])
 			
 			# check win/draw?
-			result = check_game_result(game["board"])
+			result, winning_line = check_game_result(game["board"])
 			if result:
-				send_result_message(game_id, result, from_user, peer_manager.get_own_profile().get("USER_ID"))
+				send_result_message(game_id, result, from_user, peer_manager.get_own_profile().get("USER_ID"), symbol, winning_line)
 		else:
 			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Failed to apply move")
 
@@ -165,8 +172,14 @@ def dispatch(message: dict, addr: str, peer_manager):
 		game_id = message.get("GAMEID")
 		result = message.get("RESULT")
 		winner = message.get("WINNER")
+		winning_symbol = message.get("SYMBOL")
+		winning_line = message.get("WINNING_LINE")
 
 		game = peer_manager.games.pop(game_id, None)
+		if game:
+			token = game.get("token")
+			if token:
+				peer_manager.revoked_tokens.append(token)
 		if not game:
 			peer_manager.logger.log_drop("TICTACTOE_RESULT", addr, f"No active game with GAMEID {game_id}")
 			return

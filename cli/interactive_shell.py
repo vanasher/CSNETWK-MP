@@ -5,6 +5,10 @@ import config
 from parser.message_parser import craft_message
 from parser.message_parser import parse_message
 from utils.network_utils import validate_token
+from utils.game_utils import check_game_result
+from utils.game_utils import send_result_message
+from utils.game_utils import print_board
+import uuid
 
 def run_shell(logger, peer_manager):
 	print("LSNP Interactive Shell. Type 'help' for commands.")
@@ -412,9 +416,99 @@ def run_shell(logger, peer_manager):
 				print("  unfollow   - Unfollow a user")
 				print("  list       - Show known peers and following status")
 				print("  show       - Show detailed peer information with posts and DMs")
+				print("  tictactoe invite - invite a peer to a tic tac toe game")
+				print("  tictactoe move   - make a move ")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
+			
+			elif cmd == "tictactoe invite":
+				recipient = input("User ID (e.g. user@ip): ").strip()
+				now = int(time.time())
+				ttl = config.TTL
+				sender = peer_manager.own_profile["USER_ID"]
+				token = f"{sender}|{now + ttl}|game"
+				game_id = str(uuid.uuid4())[:8]
+				message_id = f"{random.getrandbits(64):016x}"
+				symbol = "X"
+
+				invite_message = {
+					"TYPE": "TICTACTOE_INVITE",
+					"FROM": sender,
+					"RECIPIENT": recipient,
+					"MESSAGE_ID": message_id,
+					"GAMEID": game_id,
+					"SYMBOL": symbol,
+					"TIMESTAMP": now,
+					"TOKEN": token
+				}
+
+				try:
+					_, ip = recipient.split("@")
+				except ValueError:
+					print("Invalid recipient format. Use user@ip.")
+					continue
+
+				is_valid, error = validate_token(invite_message["TOKEN"], "game", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"TICTACTOE_INVITE rejected: {error}")
+					return
+
+				peer_manager.create_game(game_id, recipient, is_host=True, token=token, my_symbol="X", opponent_symbol="O")
+				send_message(invite_message, (ip, config.PORT))
+				peer_manager.issued_tokens.append(token)
+				print(f"Invitation sent to {recipient} with GAMEID {game_id}")
+
+			elif cmd == "tictactoe move":
+				game_id = input("GAMEID: ").strip()
+				position_input = input("Position (0-8): ").strip()
+
+				try:
+					position = int(position_input)
+					assert 0 <= position <= 8
+				except:
+					print("Invalid position. Must be an integer from 0 to 8.")
+					continue
+
+				now = int(time.time())
+				ttl = config.TTL
+				sender = peer_manager.own_profile["USER_ID"]
+				token = f"{sender}|{now + ttl}|game"
+				game = peer_manager.games.get(game_id)
+				message_id = f"{random.getrandbits(64):016x}"
+
+				if not game:
+					print("No such game found.")
+					continue
+
+				if not game['my_turn']:
+					print("It's not your turn!")
+					continue
+
+				move_message = {
+					"TYPE": "TICTACTOE_MOVE",
+					"FROM": sender,
+					"RECIPIENT": game['opponent_id'],
+					"GAMEID": game_id,
+					"MESSAGE_ID": message_id,
+					"TURN": game['turn'],
+					"POSITION": position,
+					"SYMBOL": game["symbol"],
+					"TOKEN": token
+				}
+
+				_, ip = game['opponent_id'].split("@")
+
+				is_valid, error = validate_token(move_message["TOKEN"], "game", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"TICTACTOE_MOVE rejected: {error}")
+					return
+
+				peer_manager.apply_move(game_id, position, is_self=True)
+				print_board(game["board"])
+				send_message(move_message, (ip, config.PORT))
+				peer_manager.issued_tokens.append(token)
+				print(f"Move sent to {game['opponent_id']} at position {position}")
 
 			else:
 				print("Unknown command. Type 'help'.")

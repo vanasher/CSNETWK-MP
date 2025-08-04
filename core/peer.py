@@ -252,9 +252,12 @@ class PeerManager:
 		threading.Thread(target=retransmit_loop, daemon=True).start()
 
 	# create a new game when sending or receiving a game invite
-	def create_game(self, game_id, opponent_id, is_initiator, token):
-		symbol = "X" if is_initiator else "O"
-		opponent_symbol = "O" if is_initiator else "X"
+	def create_game(self, game_id, opponent_id, is_initiator, token, my_symbol=None, opponent_symbol=None):
+		if my_symbol is None or opponent_symbol is None:
+			symbol = "X" if is_initiator else "O"
+			opponent_symbol = "O" if is_initiator else "X"
+		else:
+			symbol = my_symbol
 		
 		self.games[game_id] = {
 			"board": [" "] * 9,
@@ -267,7 +270,7 @@ class PeerManager:
 			"token": token
 		}
 	
-	def apply_move(self, game_id, position, symbol):
+	def apply_move(self, game_id, position, is_self, symbol=None):
 		game = self.games.get(game_id)
 		if not game:
 			return False
@@ -275,6 +278,10 @@ class PeerManager:
 		if position < 0 or position >= 9 or game["board"][position] != " ":
 			return False
 
+		if symbol is None:
+			symbol = game["symbol"] if is_self else game["opponent_symbol"]
+
 		game["board"][position] = symbol
 		game["turn"] += 1
+		game["my_turn"] = is_self  # It will be their turn if is_self is False
 		return True
