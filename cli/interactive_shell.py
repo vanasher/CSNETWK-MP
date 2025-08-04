@@ -470,6 +470,12 @@ def run_shell(logger, peer_manager):
 					print("Invalid position. Must be an integer from 0 to 8.")
 					continue
 				
+				# check if position is already taken
+				board = peer_manager.games[game_id]["board"]
+				if board[position] != " ":
+					print("Invalid move. That position is already occupied.")
+					continue
+
 				import time, random
 				now = int(time.time())
 				ttl = config.TTL
