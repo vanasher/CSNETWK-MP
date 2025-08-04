@@ -522,6 +522,7 @@ def run_shell(logger, peer_manager):
 				if result:
 					my_user_id = peer_manager.own_profile["USER_ID"]
 					send_result_message(
+						peer_manager,
 						game_id,
 						result,
 						game["opponent_id"],
