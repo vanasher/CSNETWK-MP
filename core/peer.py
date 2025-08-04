@@ -154,6 +154,24 @@ class PeerManager:
 	def list_peers(self):
 		return [(uid, info['display_name']) for uid, info in self.peers.items()]
 	
+	def get_peer_ips(self):
+		"""Get all IP addresses of known peers"""
+		peer_ips = []
+		for user_id in self.peers:
+			if "@" in user_id:
+				ip = user_id.split("@")[1]
+				peer_ips.append(ip)
+		return peer_ips
+	
+	def validate_member_ip(self, member):
+		"""Validate that a member exists in our peer list"""
+		# Get list of all known user_ids from peers
+		peer_list = self.list_peers()  # Returns [(user_id, display_name), ...]
+		known_user_ids = [user_id for user_id, display_name in peer_list]
+		
+		# Check if the input member matches any known user_id
+		return member in known_user_ids
+	
 	# show detailed information about a peer including posts and DMs
 	def show_peer_details(self, user_id, display_name):
 		"""Display detailed information about a peer including their posts and DMs"""
@@ -261,6 +279,15 @@ class PeerManager:
 		if not self.own_profile:
 			raise ValueError("Profile must be set before creating groups")
 		
+		# Validate that all members exist in our peer list
+		invalid_members = []
+		for member in members:
+			if not self.validate_member_ip(member):
+				invalid_members.append(member)
+		
+		if invalid_members:
+			raise ValueError(f"Cannot add unknown members: {', '.join(invalid_members)}. Only known peers can be added to groups.")
+		
 		creator = self.own_profile["USER_ID"]
 		timestamp = int(time.time())
 		
@@ -291,6 +318,16 @@ class PeerManager:
 		
 		if not self.own_profile:
 			raise ValueError("Profile must be set")
+		
+		# Validate that members being added exist in our peer list
+		if add_members:
+			invalid_members = []
+			for member in add_members:
+				if not self.validate_member_ip(member):
+					invalid_members.append(member)
+			
+			if invalid_members:
+				raise ValueError(f"Cannot add unknown members: {', '.join(invalid_members)}. Only known peers can be added to groups.")
 		
 		creator = self.own_profile["USER_ID"]
 		timestamp = int(time.time())
