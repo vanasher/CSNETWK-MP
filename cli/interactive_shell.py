@@ -454,7 +454,7 @@ def run_shell(logger, peer_manager):
 					logger.log("REJECT", f"TICTACTOE_INVITE rejected: {error}")
 					return
 
-				peer_manager.create_game(game_id, recipient, is_host=True, token=token, my_symbol="X", opponent_symbol="O")
+				peer_manager.create_game(game_id, recipient, is_initiator=True, token=token, my_symbol="X", opponent_symbol="O")
 				send_message(invite_message, (ip, config.PORT))
 				peer_manager.issued_tokens.append(token)
 				print(f"Invitation sent to {recipient} with GAMEID {game_id}")
