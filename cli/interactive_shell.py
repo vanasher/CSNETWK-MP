@@ -4,6 +4,7 @@ import json
 import config
 import time
 import random
+import string
 from parser.message_parser import craft_message
 from parser.message_parser import parse_message
 from utils.network_utils import validate_token
@@ -425,10 +426,10 @@ def run_shell(logger, peer_manager):
 				print("  tictactoe invite - invite a peer to a tic tac toe game")
 				print("  tictactoe move   - make a move ")
 				print("  groups     - Show all groups you belong to")
-				print("  group_create - Create a new group")
-				print("  group_update - Update group membership")
-				print("  group_message - Send message to a group")
-				print("  group_show - Show detailed group information")
+				print("  group create - Create a new group")
+				print("  group update - Update group membership")
+				print("  group message - Send message to a group")
+				print("  group show - Show detailed group information")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
@@ -661,15 +662,16 @@ def run_shell(logger, peer_manager):
 					for group_id, group_name, member_count in groups:
 						print(f"  {group_name} ({group_id}) - {member_count} members")
 
-			elif cmd == "group_create":
+			elif cmd == "group create":
 				if not peer_manager.own_profile:
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
 
-				group_id = input("Group ID: ").strip()
-				if not group_id:
-					print("Group ID cannot be empty.")
-					continue
+				# Automatically generate random case-sensitive group ID
+				import random
+				chars = string.ascii_letters + string.digits
+				group_id = ''.join(random.choice(chars) for _ in range(8))
+				print(f"Generated Group ID: {group_id}")
 
 				group_name = input("Group name: ").strip()
 				if not group_name:
@@ -708,7 +710,7 @@ def run_shell(logger, peer_manager):
 				except Exception as e:
 					print(f"Failed to create group: {e}")
 
-			elif cmd == "group_update":
+			elif cmd == "group update":
 				if not peer_manager.own_profile:
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
@@ -758,7 +760,7 @@ def run_shell(logger, peer_manager):
 				except Exception as e:
 					print(f"Failed to update group: {e}")
 
-			elif cmd == "group_message":
+			elif cmd == "group message":
 				if not peer_manager.own_profile:
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
@@ -803,7 +805,7 @@ def run_shell(logger, peer_manager):
 				except Exception as e:
 					print(f"Failed to send group message: {e}")
 
-			elif cmd == "group_show":
+			elif cmd == "group show":
 				# Show available groups
 				groups = peer_manager.list_groups()
 				if not groups:
