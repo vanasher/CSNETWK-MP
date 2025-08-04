@@ -180,9 +180,9 @@ def dispatch(message: dict, addr: str, peer_manager):
 			print_board(game["board"])
 			
 			# check win/draw?
-			result, winning_line = check_game_result(game["board"])
-			if result:
-				send_result_message(game_id, result, from_user, peer_manager.get_own_profile().get("USER_ID"), symbol, winning_line)
+			# result, winning_line = check_game_result(game["board"])
+			# if result:
+			# 	send_result_message(game_id, result, from_user, peer_manager.get_own_profile().get("USER_ID"), symbol, winning_line)
 		else:
 			peer_manager.logger.log_drop("TICTACTOE_MOVE", addr, "Failed to apply move")
 
@@ -197,7 +197,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		if game:
 			token = game.get("token")
 			if token:
-				peer_manager.revoked_tokens.append(token)
+				peer_manager.revoked_tokens.add(token)
 		if not game:
 			peer_manager.logger.log_drop("TICTACTOE_RESULT", addr, f"No active game with GAMEID {game_id}")
 			return

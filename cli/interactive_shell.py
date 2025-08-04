@@ -6,6 +6,7 @@ from parser.message_parser import craft_message
 from parser.message_parser import parse_message
 from utils.network_utils import validate_token
 from utils.game_utils import print_board
+from utils.game_utils import check_game_result, send_result_message
 import uuid
 
 def run_shell(logger, peer_manager):
@@ -517,6 +518,17 @@ def run_shell(logger, peer_manager):
 				peer_manager.issued_tokens.append(token)
 				print(f"Move sent to {game['opponent_id']} at position {position}")
 
+				result, winning_line = check_game_result(game["board"])
+				if result:
+					my_user_id = peer_manager.own_profile["USER_ID"]
+					send_result_message(
+						game_id,
+						result,
+						game["opponent_id"],
+						winner_id=my_user_id if result == "WIN" else None,
+						winning_symbol=game["symbol"] if result == "WIN" else None,
+						winning_line=winning_line
+					)
 			else:
 				print("Unknown command. Type 'help'.")
 
