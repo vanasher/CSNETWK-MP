@@ -14,6 +14,7 @@ class PeerManager:
 		self.peers = {} # stores disctionary of peers by USER_ID
 						# user_id -> {display_name, status, posts: [], dms: []}
 		self.own_profile = None
+		self.own_posts = [] # track our own posts for like reference
 		self.following = set()
 		self.pending_acks = {}  # KEY: MESSAGE_ID, VALUE: {message, addr, timestamp, attempts}
 		self.followers = [] # composed of user_id of followers
@@ -82,6 +83,18 @@ class PeerManager:
 		if user_id in self.peers:
 			self.peers[user_id]['posts'].append({
 			'content': content,
+			'timestamp': timestamp,
+			'ttl': ttl,
+			'message_id': message_id,
+			'token': token
+		})
+
+	# add our own post for tracking purposes (for likes)
+	def add_own_post(self, content, timestamp, ttl, message_id, token):
+		"""Track our own posts for like functionality"""
+		self.own_posts.append({
+			'content': content,
+			'timestamp': timestamp,
 			'ttl': ttl,
 			'message_id': message_id,
 			'token': token
@@ -284,4 +297,58 @@ class PeerManager:
 		game["board"][position] = symbol
 		game["turn"] += 1
 		game["my_turn"] = not is_self  # It will be their turn if is_self is False
+		return True
+	
+	def add_like(self, target_user, post_timestamp, action, post_content):
+		"""Add a like/unlike record for tracking purposes"""
+		if target_user not in self.peers:
+			return False
+		
+		if 'likes' not in self.peers[target_user]:
+			self.peers[target_user]['likes'] = []
+		
+		# Remove any existing like/unlike for this post from this user
+		likes_list = self.peers[target_user]['likes']
+		self.peers[target_user]['likes'] = [
+			like for like in likes_list 
+			if like.get('post_timestamp') != post_timestamp or like.get('from_user') != self.own_profile["USER_ID"]
+		]
+		
+		# Add the new like/unlike
+		if action == "LIKE":
+			self.peers[target_user]['likes'].append({
+				'from_user': self.own_profile["USER_ID"],
+				'post_timestamp': post_timestamp,
+				'action': action,
+				'post_content': post_content,
+				'timestamp': int(time.time())
+			})
+		
+		return True
+	
+	def handle_like_received(self, from_user, post_timestamp, action, post_content):
+		"""Handle when someone likes/unlikes our post"""
+		if not self.own_profile:
+			return False
+		
+		# Initialize likes structure if it doesn't exist
+		if not hasattr(self, 'received_likes'):
+			self.received_likes = []
+		
+		# Remove any existing like/unlike for this post from this user
+		self.received_likes = [
+			like for like in self.received_likes 
+			if not (like.get('from_user') == from_user and like.get('post_timestamp') == post_timestamp)
+		]
+		
+		# Add the new like (but not unlike - unlikes just remove the like)
+		if action == "LIKE":
+			self.received_likes.append({
+				'from_user': from_user,
+				'post_timestamp': post_timestamp,
+				'action': action,
+				'post_content': post_content,
+				'timestamp': int(time.time())
+			})
+		
 		return True

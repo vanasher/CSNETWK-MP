@@ -52,6 +52,16 @@ class Logger:
 					display_name = peer_manager.get_display_name(to_user_id)
 					print(f"\n\nYou have unfollowed {display_name}")
 
+			elif msg_type == "LIKE":
+				to_user_id = msg.get("TO")
+				action = msg.get("ACTION", "LIKE")
+				if peer_manager:
+					display_name = peer_manager.get_display_name(to_user_id)
+					if action == "LIKE":
+						print(f"\n\nYou liked {display_name}'s post.")
+					else:
+						print(f"\n\nYou unliked {display_name}'s post.")
+
 	def log_recv(self, msg_type, ip, msg=None, peer_manager=None):
 		#self.log("RECV <", f"From {ip} | TYPE: {msg_type}")
 		if self.verbose:
@@ -97,6 +107,27 @@ class Logger:
 				if peer_manager:
 					display_name = peer_manager.get_display_name(user_id)
 					print(f"{display_name} is inviting you to play tic-tac-toe")
+
+			if msg.get("TYPE") == "LIKE":
+				user_id = msg.get("FROM")
+				action = msg.get("ACTION", "LIKE")
+				post_timestamp = msg.get("POST_TIMESTAMP")
+				
+				if peer_manager:
+					display_name = peer_manager.get_display_name(user_id)
+					
+					# Find the post content based on timestamp
+					post_content = "your post"
+					if hasattr(peer_manager, 'own_posts') and peer_manager.own_posts:
+						for post in peer_manager.own_posts:
+							if post.get('timestamp') == post_timestamp:
+								post_content = post.get('content', 'your post')
+								break
+					
+					if action == "LIKE":
+						print(f"\n\n{display_name} likes {post_content}")
+					else:
+						print(f"\n\n{display_name} unliked {post_content}")
 
 	def log_token(self, valid, reason=""):
 		status = "✅ VALID" if valid else f"❌ INVALID: {reason}"

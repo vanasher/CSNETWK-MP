@@ -79,6 +79,7 @@ def run_shell(logger, peer_manager):
 					"CONTENT": content,
 					"TTL": ttl,
 					"MESSAGE_ID": message_id,
+					"TIMESTAMP": now,
 					"TOKEN": token
 				}
 
@@ -87,6 +88,9 @@ def run_shell(logger, peer_manager):
 				if not is_valid:
 					logger.log("REJECT", f"POST rejected: {error}")
 					return
+				
+				# Track our own post
+				peer_manager.add_own_post(content, now, ttl, message_id, token)
 				
 				# send only to followers
 				follower_ips = peer_manager.get_follower_ips()
@@ -415,11 +419,116 @@ def run_shell(logger, peer_manager):
 				print("  unfollow   - Unfollow a user")
 				print("  list       - Show known peers and following status")
 				print("  show       - Show detailed peer information with posts and DMs")
+				print("  like       - Like or unlike a post")
 				print("  tictactoe invite - invite a peer to a tic tac toe game")
 				print("  tictactoe move   - make a move ")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
+			
+			elif cmd == "like":
+				# Show all posts from followed users first
+				print("\n=== POSTS FROM FOLLOWED USERS ===")
+				posts_found = False
+				for user_id in peer_manager.following:
+					peer_info = peer_manager.peers.get(user_id)
+					if peer_info and peer_info.get('posts'):
+						posts = peer_info['posts']
+						display_name = peer_info['display_name']
+						print(f"\nPosts from {display_name} ({user_id}):")
+						for i, post in enumerate(posts, 1):
+							# Check if post is still valid
+							is_valid, error = validate_token(post.get("token"), "broadcast", peer_manager.revoked_tokens)
+							if is_valid:
+								content = post.get('content', 'No content')
+								timestamp = post.get('timestamp', 'N/A')
+								print(f"  {i}. {content}")
+								print(f"     Timestamp: {timestamp}")
+								posts_found = True
+				
+				if not posts_found:
+					print("No posts available from followed users.")
+					continue
+				
+				# Get input for like action
+				target_user = input("\nEnter the user ID of the post author: ").strip()
+				if not target_user:
+					print("User ID cannot be empty.")
+					continue
+				
+				if target_user not in peer_manager.following:
+					print(f"You are not following {target_user}. You can only like posts from users you follow.")
+					continue
+				
+				try:
+					post_timestamp = int(input("Enter the post timestamp: ").strip())
+				except ValueError:
+					print("Invalid timestamp. Must be a number.")
+					continue
+				
+				action = input("Action (LIKE/UNLIKE): ").strip().upper()
+				if action not in ["LIKE", "UNLIKE"]:
+					print("Action must be either LIKE or UNLIKE.")
+					continue
+				
+				# Validate that the post exists
+				peer_info = peer_manager.peers.get(target_user)
+				if not peer_info:
+					print(f"Peer '{target_user}' not found.")
+					continue
+				
+				posts = peer_info.get('posts', [])
+				post_found = False
+				target_post_content = ""
+				for post in posts:
+					if post.get('timestamp') == post_timestamp:
+						is_valid, error = validate_token(post.get("token"), "broadcast", peer_manager.revoked_tokens)
+						if is_valid:
+							post_found = True
+							target_post_content = post.get('content', '')
+							break
+				
+				if not post_found:
+					print(f"Post with timestamp {post_timestamp} not found for user {target_user}.")
+					continue
+				
+				# Create and send the like message
+				import time, random
+				now = int(time.time())
+				ttl = config.TTL
+				sender = peer_manager.own_profile["USER_ID"]
+				token = f"{sender}|{now + ttl}|broadcast"
+				
+				like_message = {
+					"TYPE": "LIKE",
+					"FROM": sender,
+					"TO": target_user,
+					"POST_TIMESTAMP": post_timestamp,
+					"ACTION": action,
+					"TIMESTAMP": now,
+					"TOKEN": token
+				}
+				
+				# Validate token
+				is_valid, error = validate_token(like_message["TOKEN"], "broadcast", peer_manager.revoked_tokens)
+				if not is_valid:
+					logger.log("REJECT", f"LIKE rejected: {error}")
+					continue
+				
+				# Extract IP from target user
+				try:
+					_, ip = target_user.split("@")
+					send_message(like_message, (ip, config.PORT))
+					peer_manager.issued_tokens.append(token)
+					logger.log_send("LIKE", ip, like_message, peer_manager)
+					
+					# Store the like locally for tracking
+					peer_manager.add_like(target_user, post_timestamp, action, target_post_content)
+					
+				except ValueError:
+					print("Invalid user ID format. Expected user@ip.")
+				except Exception as e:
+					print(f"Failed to send like: {e}")
 			
 			elif cmd == "tictactoe invite":
 				recipient = input("User ID (e.g. user@ip): ").strip()

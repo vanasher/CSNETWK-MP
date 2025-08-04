@@ -22,14 +22,52 @@ def dispatch(message: dict, addr: str, peer_manager):
 	elif msg_type == "POST":
 		user_id = message.get("USER_ID")
 		content = message.get("CONTENT")
+		timestamp = message.get("TIMESTAMP")
 		ttl = int(message.get("TTL", 3600)) # default is 3600 per RFC
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
 		if user_id and content:
 			# Only store posts from users we're following
 			if peer_manager.is_following(user_id):
-				peer_manager.add_post(user_id, content, None, ttl, message_id)
+				peer_manager.add_post(user_id, content, timestamp, ttl, message_id, token)
 				#peer_manager.logger.log("POST", f"Received post from {user_id}: {content[:50]}...")
+
+	elif msg_type == "LIKE":
+		from_user = message.get("FROM")
+		to_user = message.get("TO")
+		post_timestamp = message.get("POST_TIMESTAMP")
+		action = message.get("ACTION")
+		timestamp = message.get("TIMESTAMP")
+		token = message.get("TOKEN")
+
+		# Validate input fields
+		if not (from_user and to_user and post_timestamp and action and timestamp and token):
+			peer_manager.logger.log_drop("Malformed LIKE message.")
+			return
+
+		# Check if this message is intended for the user
+		my_user_id = peer_manager.own_profile.get("USER_ID")
+		if to_user != my_user_id:
+			peer_manager.logger.log_drop(f"Ignored LIKE not addressed to me: {to_user}")
+			return
+
+		# Validate token
+		is_valid, error = validate_token(token, "broadcast", peer_manager.revoked_tokens)
+		if not is_valid:
+			peer_manager.logger.log_drop(f"Invalid LIKE token: {error}")
+			return
+
+		# Find the post being liked/unliked
+		post_content = ""
+		if hasattr(peer_manager, 'own_posts') and peer_manager.own_posts:
+			for post in peer_manager.own_posts:
+				if post.get('timestamp') == post_timestamp:
+					post_content = post.get('content', '')
+					break
+		
+		# Handle the like/unlike
+		peer_manager.handle_like_received(from_user, post_timestamp, action, post_content)
+		peer_manager.logger.log_recv("LIKE", addr, message, peer_manager)
 
 	elif msg_type == "DM":
 		from_user = message.get("FROM")
