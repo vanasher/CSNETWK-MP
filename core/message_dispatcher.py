@@ -23,6 +23,11 @@ def dispatch(message: dict, addr: str, peer_manager):
 		user_id = message.get("USER_ID")
 		content = message.get("CONTENT")
 		timestamp = message.get("TIMESTAMP")
+		# Convert timestamp to integer to ensure consistency with locally created posts
+		try:
+			timestamp = int(timestamp) if timestamp else None
+		except (ValueError, TypeError):
+			timestamp = None
 		ttl = int(message.get("TTL", 3600)) # default is 3600 per RFC
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
@@ -36,6 +41,11 @@ def dispatch(message: dict, addr: str, peer_manager):
 		from_user = message.get("FROM")
 		to_user = message.get("TO")
 		post_timestamp = message.get("POST_TIMESTAMP")
+		# Convert post_timestamp to integer to ensure consistency
+		try:
+			post_timestamp = int(post_timestamp) if post_timestamp else None
+		except (ValueError, TypeError):
+			post_timestamp = None
 		action = message.get("ACTION")
 		timestamp = message.get("TIMESTAMP")
 		token = message.get("TOKEN")
@@ -73,6 +83,11 @@ def dispatch(message: dict, addr: str, peer_manager):
 		from_user = message.get("FROM")
 		to_user = message.get("TO")
 		timestamp = message.get("TIMESTAMP")
+		# Convert timestamp to integer to ensure consistency
+		try:
+			timestamp = int(timestamp) if timestamp else None
+		except (ValueError, TypeError):
+			timestamp = None
 		content = message.get("CONTENT")
 		message_id = message.get("MESSAGE_ID")
 		token = message.get("TOKEN")
