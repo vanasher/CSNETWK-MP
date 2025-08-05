@@ -1,4 +1,4 @@
-from utils.network_utils import send_message
+from utils.network_utils import send_message, handle_file_offer, handle_file_chunk, send_file_chunks
 import config
 from utils.network_utils import validate_token
 from utils.game_utils import print_board
@@ -292,3 +292,19 @@ def dispatch(message: dict, addr: str, peer_manager):
 		
 		if peer_manager.handle_group_message(message):
 			peer_manager.logger.log_recv("GROUP_MESSAGE", addr, message, peer_manager)
+	
+	elif msg_type == "FILE_OFFER":
+		handle_file_offer(message, peer_manager)
+	
+	elif msg_type == "FILE_CHUNK":
+		handle_file_chunk(message, peer_manager)
+
+	elif msg_type == "FILE_ACCEPTED":
+		from_user = message["FROM"]
+		file_id = message["FILEID"]
+
+		# Retrieve saved filepath and token from somewhere (dict, etc.)
+		file_info = peer_manager.get_pending_file(file_id)
+		if file_info:
+			filepath, token = file_info["filepath"], file_info["token"]
+			send_file_chunks(file_id, filepath, from_user, token, peer_manager)
