@@ -628,14 +628,10 @@ class PeerManager:
 	
 	# Get all members ip
 	def get_group_member_ips(self, group_id):
-		if group_id not in self.groups:
-			return []
-		
 		member_ips = []
 		for member in self.groups[group_id]["members"]:
-			if "@" in member:
-				ip = member.split("@")[1]
-				member_ips.append(ip)
+			ip = member.split("@")[1]
+			member_ips.append(ip)
 		return member_ips
 
 	def add_pending_file(self, file_id, filepath, token):
