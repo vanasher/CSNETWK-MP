@@ -2,6 +2,9 @@ from utils.network_utils import send_message, get_local_ip
 from core.peer import PeerManager
 import json
 import config
+import time
+import random
+import string
 from parser.message_parser import craft_message
 from parser.message_parser import parse_message
 from utils.network_utils import validate_token
@@ -422,6 +425,11 @@ def run_shell(logger, peer_manager):
 				print("  like       - Like or unlike a post")
 				print("  tictactoe invite - invite a peer to a tic tac toe game")
 				print("  tictactoe move   - make a move ")
+				print("  groups     - Show all groups you belong to")
+				print("  group create - Create a new group")
+				print("  group update - Update group membership")
+				print("  group message - Send message to a group")
+				print("  group show - Show detailed group information")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
@@ -644,6 +652,194 @@ def run_shell(logger, peer_manager):
 						winning_symbol=game["symbol"] if result == "WIN" else None,
 						winning_line=winning_line
 					)
+			# ===== GROUP COMMANDS =====
+			elif cmd == "groups":
+				groups = peer_manager.list_groups()
+				if not groups:
+					print("You are not a member of any groups.")
+				else:
+					print(f"\nYour groups ({len(groups)}):")
+					for group_id, group_name, member_count in groups:
+						print(f"  {group_name} ({group_id}) - {member_count} members")
+
+			elif cmd == "group create":
+				if not peer_manager.own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+
+				# Automatically generate random case-sensitive group ID
+				import random
+				chars = string.ascii_letters + string.digits
+				group_id = ''.join(random.choice(chars) for _ in range(8))
+				print(f"Generated Group ID: {group_id}")
+
+				group_name = input("Group name: ").strip()
+				if not group_name:
+					print("Group name cannot be empty.")
+					continue
+
+				members_input = input("Members (comma-separated user@ip): ").strip()
+				if not members_input:
+					print("At least one member must be specified.")
+					continue
+
+				members = [m.strip() for m in members_input.split(",") if m.strip()]
+				
+				# Add creator to members if not already included
+				creator_id = peer_manager.own_profile["USER_ID"]
+				if creator_id not in members:
+					members.append(creator_id)
+
+				try:
+					message = peer_manager.create_group(group_id, group_name, members)
+					
+					# Validate token
+					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
+					if not is_valid:
+						print(f"Failed to create group: {error}")
+						continue
+
+					# Send to all members
+					member_ips = peer_manager.get_group_member_ips(group_id)
+					for ip in member_ips:
+						send_message(message, (ip, config.PORT))
+					
+					peer_manager.issued_tokens.append(message["TOKEN"])
+					logger.log_send("GROUP_CREATE", get_local_ip(), message)
+
+				except Exception as e:
+					print(f"Failed to create group: {e}")
+
+			elif cmd == "group update":
+				if not peer_manager.own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+
+				# Show available groups
+				groups = peer_manager.list_groups()
+				if not groups:
+					print("You are not a member of any groups.")
+					continue
+
+				print("Available groups:")
+				for group_id, group_name, member_count in groups:
+					print(f"  {group_id} - {group_name}")
+
+				group_id = input("Group ID to update: ").strip()
+				if group_id not in peer_manager.groups:
+					print("Group not found.")
+					continue
+
+				add_members_input = input("Add members (comma-separated user@ip, or press Enter to skip): ").strip()
+				remove_members_input = input("Remove members (comma-separated user@ip, or press Enter to skip): ").strip()
+
+				if not add_members_input and not remove_members_input:
+					print("No changes specified.")
+					continue
+
+				add_members = [m.strip() for m in add_members_input.split(",") if m.strip()] if add_members_input else None
+				remove_members = [m.strip() for m in remove_members_input.split(",") if m.strip()] if remove_members_input else None
+
+				try:
+					message = peer_manager.update_group(group_id, add_members, remove_members)
+					
+					# Validate token
+					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
+					if not is_valid:
+						print(f"Failed to update group: {error}")
+						continue
+
+					# Send to all current members
+					member_ips = peer_manager.get_group_member_ips(group_id)
+					for ip in member_ips:
+						send_message(message, (ip, config.PORT))
+					
+					peer_manager.issued_tokens.append(message["TOKEN"])
+					logger.log_send("GROUP_UPDATE", get_local_ip(), message)
+
+				except Exception as e:
+					print(f"Failed to update group: {e}")
+
+			elif cmd == "group message":
+				if not peer_manager.own_profile:
+					print("Profile not set. Please set your profile first using the 'profile' command.")
+					continue
+
+				# Show available groups
+				groups = peer_manager.list_groups()
+				if not groups:
+					print("You are not a member of any groups.")
+					continue
+
+				print("Available groups:")
+				for group_id, group_name, member_count in groups:
+					print(f"  {group_id} - {group_name}")
+
+				group_id = input("Group ID: ").strip()
+				if group_id not in peer_manager.groups:
+					print("Group not found.")
+					continue
+
+				content = input("Message: ").strip()
+				if not content:
+					print("Message cannot be empty.")
+					continue
+
+				try:
+					message = peer_manager.send_group_message(group_id, content)
+					
+					# Validate token
+					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
+					if not is_valid:
+						print(f"Failed to send group message: {error}")
+						continue
+
+					# Send to all group members
+					member_ips = peer_manager.get_group_member_ips(group_id)
+					for ip in member_ips:
+						send_message(message, (ip, config.PORT))
+					
+					peer_manager.issued_tokens.append(message["TOKEN"])
+					logger.log_send("GROUP_MESSAGE", get_local_ip(), message)
+
+				except Exception as e:
+					print(f"Failed to send group message: {e}")
+
+			elif cmd == "group show":
+				# Show available groups
+				groups = peer_manager.list_groups()
+				if not groups:
+					print("You are not a member of any groups.")
+					continue
+
+				print("Available groups:")
+				for group_id, group_name, member_count in groups:
+					print(f"  {group_id} - {group_name}")
+
+				group_id = input("Group ID to show: ").strip()
+				group_details = peer_manager.get_group_details(group_id)
+				
+				if not group_details:
+					print("Group not found.")
+					continue
+
+				print(f"\n=== GROUP DETAILS: {group_details['name']} ===")
+				print(f"ID: {group_details['id']}")
+				print(f"Creator: {group_details['creator']}")
+				print(f"Created: {group_details['created']}")
+				print(f"Members ({len(group_details['members'])}):")
+				for member in group_details['members']:
+					print(f"  {member}")
+				
+				if group_details['messages']:
+					print(f"\nRecent messages ({len(group_details['messages'])}):")
+					for msg in group_details['messages'][-10:]:  # Show last 10 messages
+						import datetime
+						timestamp = datetime.datetime.fromtimestamp(msg['timestamp']).strftime("%H:%M:%S")
+						print(f"  [{timestamp}] {msg['from']}: {msg['content']}")
+				else:
+					print("\nNo messages yet.")
+
 			else:
 				print("Unknown command. Type 'help'.")
 

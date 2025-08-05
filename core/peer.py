@@ -21,6 +21,10 @@ class PeerManager:
 		self.revoked_tokens = set()
 		self.issued_tokens = [] # token is added everytime the user sends a message with a token
 		self.games = {}  # key = GAMEID, value = game info dict
+		
+		# Group functionality data structures
+		self.groups = {} # GROUP_ID -> {group_name, members: [], creator, created_timestamp, messages: []}
+		self.owned_groups = set() # GROUP_IDs that this user created
 	
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
@@ -163,6 +167,38 @@ class PeerManager:
 	# returns a list of (user_id, display_name) for all known peers
 	def list_peers(self):
 		return [(uid, info['display_name']) for uid, info in self.peers.items()]
+	
+	def get_peer_ips(self):
+		"""Get all IP addresses of known peers"""
+		peer_ips = []
+		for user_id in self.peers:
+			if "@" in user_id:
+				ip = user_id.split("@")[1]
+				peer_ips.append(ip)
+		return peer_ips
+	
+	def validate_member_ip(self, member):
+		"""Validate that a member has a valid format and exists in our peer list or is ourselves"""
+		# Check format first (similar to DM validation)
+		if not member or "@" not in member or member.count("@") != 1:
+			return False
+		
+		try:
+			username, ip = member.split("@")
+			if not username or not ip:
+				return False
+			
+			# Check if this is our own user_id
+			if self.own_profile and self.own_profile.get("USER_ID") == member:
+				return True
+			
+			# Check if this user_id exists in our peer list
+			peer_list = self.list_peers()
+			known_user_ids = [user_id for user_id, display_name in peer_list]
+			return member in known_user_ids
+			
+		except ValueError:
+			return False
 	
 	# show detailed information about a peer including posts and DMs
 	def show_peer_details(self, user_id, display_name):
@@ -352,3 +388,223 @@ class PeerManager:
 			})
 		
 		return True
+	# ===== GROUP MANAGEMENT METHODS =====
+	
+	def create_group(self, group_id, group_name, members):
+		"""Create a new group with initial members"""
+		if not self.own_profile:
+			raise ValueError("Profile must be set before creating groups")
+		
+		# Validate that all members have IPs that exist in our peer list
+		invalid_members = []
+		for member in members:
+			if not self.validate_member_ip(member):
+				invalid_members.append(member)
+		
+		if invalid_members:
+			raise ValueError(f"Cannot add members with unknown IPs: {', '.join(invalid_members)}. Only peers with known IP addresses can be added to groups.")
+		
+		creator = self.own_profile["USER_ID"]
+		timestamp = int(time.time())
+		
+		# Store group locally
+		self.groups[group_id] = {
+			"group_name": group_name,
+			"members": members.copy(),
+			"creator": creator,
+			"created_timestamp": timestamp,
+			"messages": []
+		}
+		self.owned_groups.add(group_id)
+		
+		return {
+			"TYPE": "GROUP_CREATE",
+			"FROM": creator,
+			"GROUP_ID": group_id,
+			"GROUP_NAME": group_name,
+			"MEMBERS": ",".join(members),
+			"TIMESTAMP": str(timestamp),
+			"TOKEN": f"{creator}|{timestamp + config.TTL}|group"
+		}
+	
+	def update_group(self, group_id, add_members=None, remove_members=None):
+		"""Update group membership"""
+		if group_id not in self.groups:
+			raise ValueError(f"Group {group_id} not found")
+		
+		if not self.own_profile:
+			raise ValueError("Profile must be set")
+		
+		# Validate that members being added have IPs that exist in our peer list
+		if add_members:
+			invalid_members = []
+			for member in add_members:
+				if not self.validate_member_ip(member):
+					invalid_members.append(member)
+			
+			if invalid_members:
+				raise ValueError(f"Cannot add members with unknown IPs: {', '.join(invalid_members)}. Only peers with known IP addresses can be added to groups.")
+		
+		creator = self.own_profile["USER_ID"]
+		timestamp = int(time.time())
+		group = self.groups[group_id]
+		
+		# Update local membership
+		if add_members:
+			for member in add_members:
+				if member not in group["members"]:
+					group["members"].append(member)
+		
+		if remove_members:
+			for member in remove_members:
+				if member in group["members"]:
+					group["members"].remove(member)
+		
+		# Create update message
+		message = {
+			"TYPE": "GROUP_UPDATE",
+			"FROM": creator,
+			"GROUP_ID": group_id,
+			"TIMESTAMP": str(timestamp),
+			"TOKEN": f"{creator}|{timestamp + config.TTL}|group"
+		}
+		
+		if add_members:
+			message["ADD"] = ",".join(add_members)
+		if remove_members:
+			message["REMOVE"] = ",".join(remove_members)
+		
+		return message
+	
+	def send_group_message(self, group_id, content):
+		"""Send a message to all group members"""
+		if group_id not in self.groups:
+			raise ValueError(f"Group {group_id} not found")
+		
+		if not self.own_profile:
+			raise ValueError("Profile must be set")
+		
+		sender = self.own_profile["USER_ID"]
+		timestamp = int(time.time())
+		
+		# Store message locally
+		message_data = {
+			"from": sender,
+			"content": content,
+			"timestamp": timestamp
+		}
+		self.groups[group_id]["messages"].append(message_data)
+		
+		return {
+			"TYPE": "GROUP_MESSAGE",
+			"FROM": sender,
+			"GROUP_ID": group_id,
+			"CONTENT": content,
+			"TIMESTAMP": str(timestamp),
+			"TOKEN": f"{sender}|{timestamp + config.TTL}|group"
+		}
+	
+	def handle_group_create(self, message):
+		"""Handle incoming GROUP_CREATE message"""
+		group_id = message.get("GROUP_ID")
+		group_name = message.get("GROUP_NAME")
+		members_str = message.get("MEMBERS", "")
+		creator = message.get("FROM")
+		timestamp = int(message.get("TIMESTAMP", 0))
+		
+		members = [m.strip() for m in members_str.split(",") if m.strip()]
+		
+		# Check if we're in the group
+		my_user_id = self.own_profile.get("USER_ID") if self.own_profile else None
+		if my_user_id and my_user_id in members:
+			self.groups[group_id] = {
+				"group_name": group_name,
+				"members": members,
+				"creator": creator,
+				"created_timestamp": timestamp,
+				"messages": []
+			}
+			return True
+		return False
+	
+	def handle_group_update(self, message):
+		"""Handle incoming GROUP_UPDATE message"""
+		group_id = message.get("GROUP_ID")
+		add_members_str = message.get("ADD", "")
+		remove_members_str = message.get("REMOVE", "")
+		
+		if group_id not in self.groups:
+			return False
+		
+		group = self.groups[group_id]
+		
+		# Add members
+		if add_members_str:
+			add_members = [m.strip() for m in add_members_str.split(",") if m.strip()]
+			for member in add_members:
+				if member not in group["members"]:
+					group["members"].append(member)
+		
+		# Remove members
+		if remove_members_str:
+			remove_members = [m.strip() for m in remove_members_str.split(",") if m.strip()]
+			for member in remove_members:
+				if member in group["members"]:
+					group["members"].remove(member)
+		
+		return True
+	
+	def handle_group_message(self, message):
+		"""Handle incoming GROUP_MESSAGE"""
+		group_id = message.get("GROUP_ID")
+		content = message.get("CONTENT")
+		sender = message.get("FROM")
+		timestamp = int(message.get("TIMESTAMP", 0))
+		
+		if group_id not in self.groups:
+			return False
+		
+		# Check if sender is a group member
+		if sender not in self.groups[group_id]["members"]:
+			return False
+		
+		# Store message
+		message_data = {
+			"from": sender,
+			"content": content,
+			"timestamp": timestamp
+		}
+		self.groups[group_id]["messages"].append(message_data)
+		return True
+	
+	def list_groups(self):
+		"""List all groups this user belongs to"""
+		return [(gid, gdata["group_name"], len(gdata["members"])) 
+				for gid, gdata in self.groups.items()]
+	
+	def get_group_details(self, group_id):
+		"""Get detailed information about a group"""
+		if group_id not in self.groups:
+			return None
+		
+		group = self.groups[group_id]
+		return {
+			"id": group_id,
+			"name": group["group_name"],
+			"members": group["members"],
+			"creator": group["creator"],
+			"created": group["created_timestamp"],
+			"messages": group["messages"]
+		}
+	
+	def get_group_member_ips(self, group_id):
+		"""Get IP addresses of group members for message sending"""
+		if group_id not in self.groups:
+			return []
+		
+		member_ips = []
+		for member in self.groups[group_id]["members"]:
+			if "@" in member:
+				ip = member.split("@")[1]
+				member_ips.append(ip)
+		return member_ips

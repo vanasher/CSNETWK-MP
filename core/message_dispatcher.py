@@ -248,3 +248,47 @@ def dispatch(message: dict, addr: str, peer_manager):
 			print(f"You won the game {game_id}!")
 		else:
 			print(f"You lost game {game_id}. Winner: {winner}")
+
+	# ===== GROUP MESSAGE HANDLERS =====
+	elif msg_type == "GROUP_CREATE":
+		token = message.get("TOKEN")
+		if token:
+			# Validate token with group scope
+			from utils.network_utils import validate_token
+			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
+			if not is_valid:
+				peer_manager.logger.log_drop(f"Invalid GROUP_CREATE token: {error}")
+				return
+		
+		if peer_manager.handle_group_create(message):
+			group_name = message.get("GROUP_NAME", "Unknown Group")
+			peer_manager.logger.log_recv("GROUP_CREATE", addr, message, peer_manager)
+
+	elif msg_type == "GROUP_UPDATE":
+		token = message.get("TOKEN")
+		if token:
+			# Validate token with group scope
+			from utils.network_utils import validate_token
+			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
+			if not is_valid:
+				peer_manager.logger.log_drop(f"Invalid GROUP_UPDATE token: {error}")
+				return
+		
+		if peer_manager.handle_group_update(message):
+			group_id = message.get("GROUP_ID")
+			group = peer_manager.groups.get(group_id)
+			group_name = group["group_name"] if group else "Unknown Group"
+			peer_manager.logger.log_recv("GROUP_UPDATE", addr, message, peer_manager)
+
+	elif msg_type == "GROUP_MESSAGE":
+		token = message.get("TOKEN")
+		if token:
+			# Validate token with group scope
+			from utils.network_utils import validate_token
+			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
+			if not is_valid:
+				peer_manager.logger.log_drop(f"Invalid GROUP_MESSAGE token: {error}")
+				return
+		
+		if peer_manager.handle_group_message(message):
+			peer_manager.logger.log_recv("GROUP_MESSAGE", addr, message, peer_manager)
