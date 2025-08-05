@@ -59,7 +59,7 @@ The following images are taken from AI generated code which were used as basis f
 
 <img width="673" height="377" alt="image" src="https://github.com/user-attachments/assets/1fcfa68b-bbd4-492d-863f-701b52c1670b" />
 <img width="1576" height="738" alt="image" src="https://github.com/user-attachments/assets/4093f242-5eab-4389-aef6-8983415298c5" />
-
+**cli/interactive_shell.py**
 <img width="1095" height="614" alt="Screenshot 2025-08-05 210906" src="https://github.com/user-attachments/assets/a94594ac-0ac8-401b-9c8c-f6edfeb7df1e" />
 <img width="1027" height="1048" alt="Screenshot 2025-08-05 211041" src="https://github.com/user-attachments/assets/6ede9139-d915-429d-8fbd-5fc399783b6c" />
 
