@@ -886,7 +886,7 @@ def run_shell(logger, peer_manager):
 					# send to all current members
 					member_ips = peer_manager.get_group_member_ips(group_id)
 					if remove_members:
-						for id in remove_members
+						for id in remove_members:
 							send_message(message, (id.split("@")[1], config.PORT))
 					for ip in member_ips:
 						send_message(message, (ip, config.PORT))
