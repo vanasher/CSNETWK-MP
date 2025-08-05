@@ -254,7 +254,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		token = message.get("TOKEN")
 		if token:
 			# Validate token with group scope
-			from utils.network_utils import validate_token
+			# from utils.network_utils import validate_token
 			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
 			if not is_valid:
 				peer_manager.logger.log_drop(f"Invalid GROUP_CREATE token: {error}")
@@ -268,7 +268,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		token = message.get("TOKEN")
 		if token:
 			# Validate token with group scope
-			from utils.network_utils import validate_token
+			# from utils.network_utils import validate_token
 			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
 			if not is_valid:
 				peer_manager.logger.log_drop(f"Invalid GROUP_UPDATE token: {error}")
@@ -284,7 +284,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		token = message.get("TOKEN")
 		if token:
 			# Validate token with group scope
-			from utils.network_utils import validate_token
+			# from utils.network_utils import validate_token
 			is_valid, error = validate_token(token, "group", peer_manager.revoked_tokens)
 			if not is_valid:
 				peer_manager.logger.log_drop(f"Invalid GROUP_MESSAGE token: {error}")
