@@ -41,8 +41,45 @@ def run_shell(logger, peer_manager):
 					username = peer_manager.own_profile["USER_ID"].split('@')[0]
 				display_name = input("Display name: ").strip()
 				status = input("Status: ").strip()
+				
+				# Avatar support
+				avatar_type = None
+				avatar_encoding = None
+				avatar_data = None
+				
+				avatar_choice = input("Do you want to set a profile picture? (y/n): ").strip().lower()
+				if avatar_choice == 'y':
+					avatar_path = input("Enter path to image file (or press Enter to skip): ").strip()
+					if avatar_path:
+						try:
+							import base64
+							import os
+							import mimetypes
+							
+							if not os.path.exists(avatar_path):
+								print("File not found. Skipping avatar.")
+							else:
+								# Check file size (limit to ~20KB as per spec)
+								file_size = os.path.getsize(avatar_path)
+								if file_size > 20480:  # 20KB
+									print(f"File too large ({file_size} bytes). Avatar must be under 20KB. Skipping avatar.")
+								else:
+									# Determine MIME type
+									mime_type, _ = mimetypes.guess_type(avatar_path)
+									if not mime_type or not mime_type.startswith('image/'):
+										print("Not a valid image file. Skipping avatar.")
+									else:
+										# Read and encode file
+										with open(avatar_path, 'rb') as f:
+											image_data = f.read()
+										avatar_data = base64.b64encode(image_data).decode('utf-8')
+										avatar_type = mime_type
+										avatar_encoding = "base64"
+										print(f"Avatar loaded: {mime_type}, {len(avatar_data)} characters")
+						except Exception as e:
+							print(f"Error loading avatar: {e}. Skipping avatar.")
 
-				peer_manager.set_own_profile(username, display_name, status)
+				peer_manager.set_own_profile(username, display_name, status, avatar_type, avatar_encoding, avatar_data)
 				logger.log("SHELL", f"Profile set for {username} and will be broadcast periodically.")
 
 			# 'post' command to create a new post
@@ -257,7 +294,11 @@ def run_shell(logger, peer_manager):
 				if peers:
 					for user_id, display_name in peers:
 						following_status = " (Following)" if peer_manager.is_following(user_id) else ""
-						print(f"  {display_name} ({user_id}){following_status}")
+						avatar_info = ""
+						peer_info = peer_manager.peers.get(user_id)
+						if peer_info and peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+							avatar_info = f" [Avatar: {peer_info.get('avatar_type')}]"
+						print(f"  {display_name} ({user_id}){following_status}{avatar_info}")
 				else:
 					print("  No peers discovered yet.")
 				
@@ -265,7 +306,11 @@ def run_shell(logger, peer_manager):
 				if peer_manager.following:
 					for user_id in peer_manager.following:
 						display_name = peer_manager.get_display_name(user_id)
-						print(f"  {display_name} ({user_id})")
+						avatar_info = ""
+						peer_info = peer_manager.peers.get(user_id)
+						if peer_info and peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+							avatar_info = f" [Avatar: {peer_info.get('avatar_type')}]"
+						print(f"  {display_name} ({user_id}){avatar_info}")
 				else:
 					print("  Not following anyone.")
 
@@ -316,6 +361,40 @@ def run_shell(logger, peer_manager):
 					username = input("Username: ").strip()
 					display_name = input("Display name: ").strip()
 					status = input("Status: ").strip()
+					
+					# Avatar support for simulation
+					avatar_type = None
+					avatar_encoding = None
+					avatar_data = None
+					
+					avatar_choice = input("Include test avatar? (y/n): ").strip().lower()
+					if avatar_choice == 'y':
+						avatar_path = input("Enter path to image file: ").strip()
+						if avatar_path:
+							try:
+								import base64
+								import os
+								import mimetypes
+								
+								if os.path.exists(avatar_path):
+									file_size = os.path.getsize(avatar_path)
+									if file_size <= 20480:  # 20KB limit
+										mime_type, _ = mimetypes.guess_type(avatar_path)
+										if mime_type and mime_type.startswith('image/'):
+											with open(avatar_path, 'rb') as f:
+												image_data = f.read()
+											avatar_data = base64.b64encode(image_data).decode('utf-8')
+											avatar_type = mime_type
+											avatar_encoding = "base64"
+											print(f"Test avatar loaded: {mime_type}")
+										else:
+											print("Not a valid image file.")
+									else:
+										print("File too large (>20KB).")
+								else:
+									print("File not found.")
+							except Exception as e:
+								print(f"Error loading test avatar: {e}")
 
 					user_id = f"{username}@{get_local_ip()}"
 					message = {
@@ -323,9 +402,9 @@ def run_shell(logger, peer_manager):
 						"USER_ID": user_id,
 						"DISPLAY_NAME": display_name,
 						"STATUS": status,
-						"AVATAR_TYPE": None,
-						"AVATAR_ENCODING": None,
-						"AVATAR_DATA": None,
+						"AVATAR_TYPE": avatar_type,
+						"AVATAR_ENCODING": avatar_encoding,
+						"AVATAR_DATA": avatar_data,
 					}
 					print("\nCrafted Message:\n")
 					print(craft_message(message))
@@ -415,13 +494,14 @@ def run_shell(logger, peer_manager):
 			
 			elif cmd == "help":
 				print("Available commands:")
-				print("  profile    - Set your user profile")
+				print("  profile    - Set your user profile (with optional avatar)")
 				print("  post       - Create a new post")
 				print("  dm         - Send a direct message")
 				print("  follow     - Follow another user")
 				print("  unfollow   - Unfollow a user")
 				print("  list       - Show known peers and following status")
 				print("  show       - Show detailed peer information with posts and DMs")
+				print("  avatar     - Save a peer's avatar to file")
 				print("  like       - Like or unlike a post")
 				print("  tictactoe invite - invite a peer to a tic tac toe game")
 				print("  tictactoe move   - make a move ")
@@ -433,6 +513,59 @@ def run_shell(logger, peer_manager):
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
+			
+			elif cmd == "avatar":
+				# Show available peers with avatars
+				print("\n--- Peers with Profile Pictures ---")
+				peers_with_avatars = []
+				for user_id, peer_info in peer_manager.peers.items():
+					if peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+						display_name = peer_info.get('display_name', 'Unknown')
+						avatar_type = peer_info.get('avatar_type')
+						avatar_size = len(peer_info.get('avatar_data', ''))
+						peers_with_avatars.append((user_id, display_name, avatar_type, avatar_size))
+						print(f"  {display_name} ({user_id}) - {avatar_type}")
+				
+				if not peers_with_avatars:
+					print("  No peers with profile pictures found.")
+				else:
+					target_user = input("\nEnter user ID to save avatar: ").strip()
+					peer_info = peer_manager.peers.get(target_user)
+					
+					if not peer_info:
+						print("Peer not found.")
+					elif not peer_info.get('avatar_data'):
+						print("This peer has no profile picture.")
+					else:
+						try:
+							import base64
+							import os
+							
+							avatar_data = peer_info.get('avatar_data')
+							avatar_type = peer_info.get('avatar_type', 'image/png')
+							
+							# Determine file extension from MIME type
+							extension = '.png'  # default
+							if 'jpeg' in avatar_type or 'jpg' in avatar_type:
+								extension = '.jpg'
+							elif 'gif' in avatar_type:
+								extension = '.gif'
+							elif 'bmp' in avatar_type:
+								extension = '.bmp'
+							
+							# Create filename
+							username = target_user.split('@')[0]
+							filename = f"avatar_{username}{extension}"
+							
+							# Decode and save
+							image_bytes = base64.b64decode(avatar_data)
+							with open(filename, 'wb') as f:
+								f.write(image_bytes)
+							
+							print(f"Avatar saved as '{filename}' ({len(image_bytes)} bytes)")
+							
+						except Exception as e:
+							print(f"Error saving avatar: {e}")
 			
 			elif cmd == "like":
 				# Show all posts from followed users first

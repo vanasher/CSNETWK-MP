@@ -92,19 +92,32 @@ class Logger:
 		# non-verbose mode (receving messages)
 		else:
 			if msg.get("TYPE") == "PROFILE":
-				print(f"\n\nName: {msg.get('DISPLAY_NAME', 'Unknown')} | Status: {msg.get('STATUS', 'N/A')}")
+				display_name = msg.get('DISPLAY_NAME', 'Unknown')
+				status = msg.get('STATUS', 'N/A')
+				avatar_info = ""
+				if msg.get('AVATAR_TYPE') and msg.get('AVATAR_DATA'):
+					avatar_info = f" | Avatar: {msg.get('AVATAR_TYPE')}"
+				print(f"\n\nName: {display_name} | Status: {status}{avatar_info}")
 
 			if msg.get("TYPE") == "POST":
 				user_id = msg.get("USER_ID")
 				if peer_manager:
 					display_name = peer_manager.get_display_name(user_id)
-					print(f"\n\nNew post from {display_name}: \n{msg.get('CONTENT', 'No content')}")
+					avatar_info = ""
+					peer_info = peer_manager.peers.get(user_id)
+					if peer_info and peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+						avatar_info = f" | Avatar: {peer_info.get('avatar_type')}"
+					print(f"\n\nNew post from {display_name}{avatar_info}: \n{msg.get('CONTENT', 'No content')}")
 
 			if msg.get("TYPE") == "DM":
 				user_id = msg.get("FROM")
 				if peer_manager:
 					display_name = peer_manager.get_display_name(user_id)
-					print(f"\n\nFrom {display_name}: \n{msg.get('CONTENT', 'No content')}")
+					avatar_info = ""
+					peer_info = peer_manager.peers.get(user_id)
+					if peer_info and peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+						avatar_info = f" | Avatar: {peer_info.get('avatar_type')}"
+					print(f"\n\nFrom {display_name}{avatar_info}: \n{msg.get('CONTENT', 'No content')}")
 			
 			if msg.get("TYPE") == "FOLLOW":
 				user_id = msg.get("FROM")

@@ -249,7 +249,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 		else:
 			print(f"You lost game {game_id}. Winner: {winner}")
 
-	# ===== GROUP MESSAGE HANDLERS =====
+	# group message handle
 	elif msg_type == "GROUP_CREATE":
 		token = message.get("TOKEN")
 		if token:

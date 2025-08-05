@@ -211,6 +211,13 @@ class PeerManager:
 		print(f"\nPeer: {display_name} ({user_id})")
 		print(f"Status: {peer_info.get('status', 'No status')}")
 		
+		# Show avatar information
+		if peer_info.get('avatar_type') and peer_info.get('avatar_data'):
+			avatar_size = len(peer_info.get('avatar_data', ''))
+			print(f"Avatar: {peer_info.get('avatar_type')} ({avatar_size} characters, base64 encoded)")
+		else:
+			print("Avatar: No profile picture")
+		
 		# Show following status
 		following_status = "Following" if self.is_following(user_id) else "Not Following"
 		print(f"Following Status: {following_status}")
