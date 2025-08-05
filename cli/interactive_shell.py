@@ -510,6 +510,7 @@ def run_shell(logger, peer_manager):
 				print("  group update - Update group membership")
 				print("  group message - Send message to a group")
 				print("  group show - Show detailed group information")
+				print("  offer file - offer to send a file to a peer")
 				print("  verbose [on|off] - Toggle verbose logging")
 				print("  ttl        - Set TTL")
 				print("  exit       - Quit the application")
