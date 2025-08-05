@@ -62,3 +62,12 @@ The following images are taken from AI generated code which were used as basis f
 
 <br><br>
 **DISTRIBUTION OF TASKS**
+<br><br>
+
+**Van Asher S. Alcantara**
+- message parsing
+- boradcast PING and PROFILE messages
+- sending and receiving POST and DM messages
+- file transfering
+- token handling
+- game suppoert (tic tac toe)
