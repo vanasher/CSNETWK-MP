@@ -455,6 +455,11 @@ class PeerManager:
 		creator = self.own_profile["USER_ID"]
 		timestamp = int(time.time())
 		group = self.groups[group_id]
+		group_creator = group.get("creator")
+		
+		# Prevent creator from removing himself from the group
+		if remove_members and group_creator in remove_members:
+			raise ValueError("Group creator cannot remove himself from the group.")
 		
 		# Update local membership
 		if add_members:

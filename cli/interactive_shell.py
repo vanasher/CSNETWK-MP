@@ -889,6 +889,14 @@ def run_shell(logger, peer_manager):
 					
 					peer_manager.issued_tokens.append(message["TOKEN"])
 					logger.log_send("GROUP_UPDATE", get_local_ip(), message)
+					
+					# Success message
+					success_parts = []
+					if add_members:
+						success_parts.append(f"Added: {', '.join(add_members)}")
+					if remove_members:
+						success_parts.append(f"Removed: {', '.join(remove_members)}")
+					print(f"Group '{group_id}' updated successfully. {'; '.join(success_parts)}")
 
 				except Exception as e:
 					print(f"Failed to update group: {e}")
