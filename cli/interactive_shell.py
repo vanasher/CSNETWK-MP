@@ -1,4 +1,4 @@
-from utils.network_utils import send_message, get_local_ip
+from utils.network_utils import send_message, get_local_ip, send_file_offer
 from core.peer import PeerManager
 import json
 import config
@@ -839,6 +839,9 @@ def run_shell(logger, peer_manager):
 						print(f"  [{timestamp}] {msg['from']}: {msg['content']}")
 				else:
 					print("\nNo messages yet.")
+			
+			elif cmd == "offer file":
+				send_file_offer(peer_manager, config.TTL)
 
 			else:
 				print("Unknown command. Type 'help'.")

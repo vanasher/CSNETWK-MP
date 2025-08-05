@@ -25,7 +25,9 @@ class PeerManager:
 		# Group functionality data structures
 		self.groups = {} # GROUP_ID -> {group_name, members: [], creator, created_timestamp, messages: []}
 		self.owned_groups = set() # GROUP_IDs that this user created
-	
+		self.file_transfer_context = {} # for file transfer
+		self.pending_files = {}
+
 	# set the user's profile data
 	def set_own_profile(self, username, display_name, status, avatar_type=None, avatar_encoding=None, avatar_data=None):
 		ip = get_local_ip()
@@ -608,3 +610,9 @@ class PeerManager:
 				ip = member.split("@")[1]
 				member_ips.append(ip)
 		return member_ips
+
+	def add_pending_file(self, file_id, filepath, token):
+		self.pending_files[file_id] = {"filepath": filepath, "token": token}
+
+	def get_pending_file(self, file_id):
+		return self.pending_files.get(file_id)
