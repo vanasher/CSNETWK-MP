@@ -35,6 +35,7 @@ The following images are taken from AI generated code which were used as basis f
 
 <img width="471" height="499" alt="image" src="https://github.com/user-attachments/assets/d62bbceb-214a-4d73-9540-c19714e0bc8a" />
 <img width="448" height="275" alt="image" src="https://github.com/user-attachments/assets/2ffe90ad-bba4-44f4-b215-1ef72e15d21d" />
+<img width="1170" height="638" alt="image" src="https://github.com/user-attachments/assets/efca6b6f-dfb1-479d-8a00-9e519f5e7375" />
 
 <br><br>
 **utils/network_utils.py:**
