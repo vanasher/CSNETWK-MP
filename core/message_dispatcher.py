@@ -259,10 +259,14 @@ def dispatch(message: dict, addr: str, peer_manager):
 
 		if result == "DRAW":
 			print(f"Game {game_id} ended in a draw.")
-		elif winner == peer_manager.get_own_profile().get("USER_ID"):
-			print(f"You won the game {game_id}!")
 		else:
-			print(f"You lost game {game_id}. Winner: {winner}")
+			# Figure out if you won based on the symbol
+			own_symbol = game.get("symbol")  # You should store this during invite/accept phase
+			if winning_symbol == own_symbol:
+				print(f"You won game {game_id}!")
+			else:
+				display_name = peer_manager.get_display_name(message.get("FROM").split("@")[1])
+				print(f"You lost game {game_id}. Winner: {display_name}")
 
 	# group message handle
 	elif msg_type == "GROUP_CREATE":
