@@ -265,7 +265,7 @@ def dispatch(message: dict, addr: str, peer_manager):
 			if winning_symbol == own_symbol:
 				print(f"You won game {game_id}!")
 			else:
-				display_name = peer_manager.get_display_name(message.get("FROM").split("@")[1])
+				display_name = peer_manager.get_display_name(message.get("FROM"))
 				print(f"You lost game {game_id}. Winner: {display_name}")
 
 	# group message handle
