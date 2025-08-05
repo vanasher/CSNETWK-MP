@@ -66,8 +66,15 @@ The following images are taken from AI generated code which were used as basis f
 
 **Van Asher S. Alcantara**
 - message parsing
-- boradcast PING and PROFILE messages
+- broadcast PING and PROFILE messages
 - sending and receiving POST and DM messages
 - file transfering
 - token handling
 - game suppoert (tic tac toe)
+
+
+**Ewan Rafael A. Escano**
+- list all parsing
+- profile picture and likes
+- follow/unfollow feature
+- group management
