@@ -786,7 +786,7 @@ def run_shell(logger, peer_manager):
 						winning_symbol=game["symbol"] if result == "WIN" else None,
 						winning_line=winning_line
 					)
-			# ===== GROUP COMMANDS =====
+			# group commands
 			elif cmd == "groups":
 				groups = peer_manager.list_groups()
 				if not groups:
@@ -801,7 +801,7 @@ def run_shell(logger, peer_manager):
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
 
-				# Automatically generate random case-sensitive group ID
+				# automatically generate random case-sensitive group ID
 				import random
 				chars = string.ascii_letters + string.digits
 				group_id = ''.join(random.choice(chars) for _ in range(8))
@@ -819,7 +819,7 @@ def run_shell(logger, peer_manager):
 
 				members = [m.strip() for m in members_input.split(",") if m.strip()]
 				
-				# Add creator to members if not already included
+				# add creator to members if not already included
 				creator_id = peer_manager.own_profile["USER_ID"]
 				if creator_id not in members:
 					members.append(creator_id)
@@ -827,13 +827,13 @@ def run_shell(logger, peer_manager):
 				try:
 					message = peer_manager.create_group(group_id, group_name, members)
 					
-					# Validate token
+					# validate token
 					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
 					if not is_valid:
 						print(f"Failed to create group: {error}")
 						continue
 
-					# Send to all members
+					# send to all members
 					member_ips = peer_manager.get_group_member_ips(group_id)
 					for ip in member_ips:
 						send_message(message, (ip, config.PORT))
@@ -849,7 +849,7 @@ def run_shell(logger, peer_manager):
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
 
-				# Show available groups
+				# show available groups
 				groups = peer_manager.list_groups()
 				if not groups:
 					print("You are not a member of any groups.")
@@ -877,13 +877,13 @@ def run_shell(logger, peer_manager):
 				try:
 					message = peer_manager.update_group(group_id, add_members, remove_members)
 					
-					# Validate token
+					# validate token
 					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
 					if not is_valid:
 						print(f"Failed to update group: {error}")
 						continue
 
-					# Send to all current members
+					# send to all current members
 					member_ips = peer_manager.get_group_member_ips(group_id)
 					for ip in member_ips:
 						send_message(message, (ip, config.PORT))
@@ -891,7 +891,7 @@ def run_shell(logger, peer_manager):
 					peer_manager.issued_tokens.append(message["TOKEN"])
 					logger.log_send("GROUP_UPDATE", get_local_ip(), message)
 					
-					# Success message
+					# success message
 					success_parts = []
 					if add_members:
 						success_parts.append(f"Added: {', '.join(add_members)}")
@@ -907,7 +907,7 @@ def run_shell(logger, peer_manager):
 					print("Profile not set. Please set your profile first using the 'profile' command.")
 					continue
 
-				# Show available groups
+				# show available groups
 				groups = peer_manager.list_groups()
 				if not groups:
 					print("You are not a member of any groups.")
@@ -930,13 +930,13 @@ def run_shell(logger, peer_manager):
 				try:
 					message = peer_manager.send_group_message(group_id, content)
 					
-					# Validate token
+					# validate token
 					is_valid, error = validate_token(message["TOKEN"], "group", peer_manager.revoked_tokens)
 					if not is_valid:
 						print(f"Failed to send group message: {error}")
 						continue
 
-					# Send to all group members
+					# send to all group members
 					member_ips = peer_manager.get_group_member_ips(group_id)
 					for ip in member_ips:
 						send_message(message, (ip, config.PORT))
@@ -948,7 +948,7 @@ def run_shell(logger, peer_manager):
 					print(f"Failed to send group message: {e}")
 
 			elif cmd == "group show":
-				# Show available groups
+				# show available groups
 				groups = peer_manager.list_groups()
 				if not groups:
 					print("You are not a member of any groups.")
@@ -975,7 +975,8 @@ def run_shell(logger, peer_manager):
 				
 				if group_details['messages']:
 					print(f"\nRecent messages ({len(group_details['messages'])}):")
-					for msg in group_details['messages'][-10:]:  # Show last 10 messages
+					for msg in group_details['messages'][-10:]:  
+						# show last 10 messages
 						import datetime
 						timestamp = datetime.datetime.fromtimestamp(msg['timestamp']).strftime("%H:%M:%S")
 						print(f"  [{timestamp}] {msg['from']}: {msg['content']}")

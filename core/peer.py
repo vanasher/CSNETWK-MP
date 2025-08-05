@@ -86,6 +86,21 @@ class PeerManager:
 
 	# add a new post to the peer's post list
 	def add_post(self, user_id, content, timestamp=None, ttl=None, message_id=None, token=None):
+		# Create peer entry if we're following them but they're not in peers list yet
+		if user_id not in self.peers and self.is_following(user_id):
+			# Extract display name from user_id if no PROFILE received yet
+			display_name = user_id.split('@')[0] if '@' in user_id else user_id
+			self.peers[user_id] = {
+				'display_name': display_name,
+				'status': 'Unknown',
+				'avatar_type': None,
+				'avatar_encoding': None,
+				'avatar_data': None,
+				'posts': [],
+				'dms': [],
+				'followers': []
+			}
+		
 		if user_id in self.peers:
 			self.peers[user_id]['posts'].append({
 			'content': content,
@@ -590,14 +605,14 @@ class PeerManager:
 		}
 		self.groups[group_id]["messages"].append(message_data)
 		return True
-	
+
+	# List all groups
 	def list_groups(self):
-		"""List all groups this user belongs to"""
 		return [(gid, gdata["group_name"], len(gdata["members"])) 
 				for gid, gdata in self.groups.items()]
 	
+	# Get detailed information about a group
 	def get_group_details(self, group_id):
-		"""Get detailed information about a group"""
 		if group_id not in self.groups:
 			return None
 		
@@ -611,8 +626,8 @@ class PeerManager:
 			"messages": group["messages"]
 		}
 	
+	# Get all members ip
 	def get_group_member_ips(self, group_id):
-		"""Get IP addresses of group members for message sending"""
 		if group_id not in self.groups:
 			return []
 		
