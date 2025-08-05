@@ -307,4 +307,4 @@ def dispatch(message: dict, addr: str, peer_manager):
 		file_info = peer_manager.get_pending_file(file_id)
 		if file_info:
 			filepath, token = file_info["filepath"], file_info["token"]
-			send_file_chunks(file_id, filepath, from_user, token)
+			send_file_chunks(file_id, filepath, from_user, token, peer_manager)
