@@ -884,10 +884,8 @@ def run_shell(logger, peer_manager):
 						continue
 
 					# send to all current members
-					# member_ips = peer_manager.get_group_member_ips(group_id)
-					for id in peer_manager.groups[group_id].get("members"):
-						print(f"\n{peer_manager.groups[group_id].get("members")}")
-						ip = id.split("@")[1]
+					member_ips = peer_manager.get_group_member_ips(group_id)
+					for ip in member_ips:
 						send_message(message, (ip, config.PORT))
 					
 					peer_manager.issued_tokens.append(message["TOKEN"])
