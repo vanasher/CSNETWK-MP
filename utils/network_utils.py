@@ -182,11 +182,7 @@ def handle_file_offer(message, peer_manager):
 	print(f"User {display_name} is sending you a file. Do you accept? (yes/no)")
 
 	response = input("> ").strip().lower()
-	if response != "yes":
-		print("You ignored the file offer.")
-		peer_manager.file_transfer_context[file_id] = {"accepted": False}
-		return
-	elif response == "yes":
+	if response == "yes":
 		import time
 		now = int(time.time())
 
@@ -199,6 +195,11 @@ def handle_file_offer(message, peer_manager):
 		}
 		send_message(accepted_msg, (from_user.split('@')[1], config.PORT))
 		peer_manager.logger.log_send("FILE_ACCEPTED", from_user, accepted_msg)
+		
+	else:
+		print("You ignored the file offer.")
+		peer_manager.file_transfer_context[file_id] = {"accepted": False}
+		return
 
 	# Store offer context
 	peer_manager.file_transfer_context[file_id] = {
