@@ -35,13 +35,14 @@ The following images are taken from AI generated code which were used as basis f
 
 <img width="471" height="499" alt="image" src="https://github.com/user-attachments/assets/d62bbceb-214a-4d73-9540-c19714e0bc8a" />
 <img width="448" height="275" alt="image" src="https://github.com/user-attachments/assets/2ffe90ad-bba4-44f4-b215-1ef72e15d21d" />
-<img width="1170" height="638" alt="image" src="https://github.com/user-attachments/assets/efca6b6f-dfb1-479d-8a00-9e519f5e7375" />
 
 <br><br>
 **utils/network_utils.py:**
 
 <img width="713" height="123" alt="image" src="https://github.com/user-attachments/assets/0a8dd615-2ba0-4c38-911d-779acd8e298b" />
 <img width="897" height="840" alt="image" src="https://github.com/user-attachments/assets/a50658e4-2efe-441f-9263-bfda50236d67" />
+<img width="1258" height="776" alt="image" src="https://github.com/user-attachments/assets/4c04a204-03ed-4b54-ab51-02fd81a3a0cc" />
+<img width="1170" height="638" alt="image" src="https://github.com/user-attachments/assets/efca6b6f-dfb1-479d-8a00-9e519f5e7375" />
 
 <br><br>
 **cli/lsnp_craft.py:**
